@@ -5,22 +5,31 @@
     &.orders-table {
 
       /* Orders grid */
-     .table-head,
-.table-row {
-  grid-template-columns:
-    110px    // Order ID
-    1.2fr    // Customer
-    1.4fr    // Email
-    120px    // Phone
-    120px    // City
-    120px    // Total
-    140px    // Date
-    130px    // Status
-    120px;   // Action
-}
+      .table-head,
+      .table-row {
+        display: grid;
+        grid-template-columns:
+          110px    /* Order ID */
+          1.2fr    /* Customer */
+          1.4fr    /* Email */
+          120px    /* Phone */
+          120px    /* City */
+          120px    /* Total */
+          140px    /* Date */
+          130px    /* Status */
+          140px;   /* Action */
+        align-items: center;
+        padding: 12px 16px;
+      }
 
       .table-row {
         cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .table-row:hover {
+        background: #fafafa;
+        transform: translateY(-1px);
       }
     }
   }
@@ -37,20 +46,21 @@
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
+  gap: 4px; /* space between icon and text */
 
   &.success {
-    background: rgba(#22c55e, 0.12);
+    background: rgba(34, 197, 94, 0.12);
     color: #15803d;
   }
 
   &.pending {
-    background: rgba(#f59e0b, 0.15);
+    background: rgba(245, 158, 11, 0.15);
     color: #92400e;
   }
 
   &.danger {
-    background: rgba(#ef4444, 0.15);
-    color: #991b1b;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f06565;
   }
 }
 
@@ -142,7 +152,7 @@
   font-weight: 600;
 }
 
-/* ================= VIEW BUTTON ================= */
+/* ================= BUTTONS ================= */
 
 .btn-sm {
   padding: 6px 14px;
@@ -150,3 +160,83 @@
   border-radius: 20px;
 }
 
+.btn-main.btn-sm {
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-danger.btn-sm {
+  padding: 6px 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline.btn-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ================= ACTIONS ================= */
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ================= LOADER ================= */
+
+.table-loading,
+.table-empty {
+  grid-column: 1 / -1;
+  padding: 3rem;
+  text-align: center;
+  color: $txt-second-color;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+
+/* ================= DELETE MODAL ================= */
+
+.modal-box.small {
+  animation: modalIn 0.2s ease;
+}
+
+.modal-body {
+  font-size: 0.9rem;
+  color: $txt-second-color;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ================= BADGE ICON ================= */
+
+.badge svg {
+  margin-right: 4px;
+}
