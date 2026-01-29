@@ -1,34 +1,23 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import Head from 'next/head'
 
 import CheckBox from '../components/CheckBox'
 import Button from '../components/Button'
 import InfinityList from '../components/InfinityList'
-
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../lib/firebaseClient'
+import { fetchProducts } from '../redux/products/productsSlice'
 
 export default function Catalog() {
-  const [allProducts, setAllProducts] = useState([])
+  const dispatch = useDispatch()
+  const allProducts = useSelector(state => state.products.items)
   const [products, setProducts] = useState([])
   const [filter, setFilter] = useState({ category: [], color: [], size: [] })
   const filterRef = useRef(null)
 
-  // Fetch products from Firestore
+  // Fetch products via Redux on mount
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const productsRef = collection(db, 'products')
-        const snapshot = await getDocs(productsRef)
-        const productsArray = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-        setAllProducts(productsArray)
-        setProducts(productsArray)
-      } catch (error) {
-        console.error('Error fetching products:', error)
-      }
-    }
-    fetchProducts()
-  }, [])
+    dispatch(fetchProducts())
+  }, [dispatch])
 
   const filterSelect = (type, checked, item) => {
     if (checked) {
@@ -61,6 +50,7 @@ export default function Catalog() {
   const clearFilter = () => setFilter({ category: [], color: [], size: [] })
 
   const updateProducts = useCallback(() => {
+    if (!allProducts || allProducts.length === 0) return
     let temp = [...allProducts]
     if (filter.category.length > 0) temp = temp.filter(p => filter.category.includes(p.categorySlug))
     if (filter.color.length > 0) temp = temp.filter(p => p.colors.some(c => filter.color.includes(c)))

@@ -12,34 +12,41 @@ import { hydrate } from '../redux/shopping-cart/cartItemsSlide'
 import { LoadingProvider, LoadingContext } from '../context/LoadingContext'
 import Loader from '../components/Loader'
 
-function HydrateCart({ Component, pageProps }) {
+function HydrateCart({ children }) {
   const dispatch = useDispatch()
 
   useEffect(() => {
     dispatch(hydrate())
   }, [dispatch])
 
-  return <Component {...pageProps} />
+  return children
 }
 
-function AppWrapper({ Component, pageProps }) {
+function AppWrapper({ children }) {
   const { loading } = useContext(LoadingContext)
 
   return (
     <>
       {loading && <Loader />}
-      <HydrateCart Component={Component} pageProps={pageProps} />
+      {children}
     </>
   )
 }
 
 function MyApp({ Component, pageProps }) {
+  // ✅ IMPORTANT PART
+  const getLayout =
+    Component.getLayout ||
+    ((page) => <Layout>{page}</Layout>)
+
   return (
     <Provider store={store}>
       <LoadingProvider>
-        <Layout>
-          <AppWrapper Component={Component} pageProps={pageProps} />
-        </Layout>
+        <HydrateCart>
+          <AppWrapper>
+            {getLayout(<Component {...pageProps} />)}
+          </AppWrapper>
+        </HydrateCart>
       </LoadingProvider>
     </Provider>
   )

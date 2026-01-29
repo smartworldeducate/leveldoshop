@@ -3,44 +3,25 @@ import { useSelector, useDispatch } from 'react-redux'
 import ProductView from './ProductView'
 import Button from './Button'
 import { remove } from '../redux/product-modal/productModalSlice'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '../lib/firebaseClient'
 
 const ProductViewModal = () => {
   const productSlug = useSelector((state) => state.productModal.value)
+  const products = useSelector((state) => state.products.items)
   const dispatch = useDispatch()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(false)
   const modalRef = useRef(null)
 
-  // Fetch product from Firestore by slug
+  // Fetch product from Redux products slice
   useEffect(() => {
     if (!productSlug) return
+    if (!products || products.length === 0) return
 
     setLoading(true)
-    const fetchProduct = async () => {
-      try {
-        const productsRef = collection(db, 'products')
-        const q = query(productsRef, where('slug', '==', productSlug))
-        const querySnapshot = await getDocs(q)
-
-        if (!querySnapshot.empty) {
-          const docData = querySnapshot.docs[0].data()
-          setProduct({ id: querySnapshot.docs[0].id, ...docData })
-        } else {
-          console.warn('Product not found in Firestore')
-          setProduct(null)
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error)
-        setProduct(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProduct()
-  }, [productSlug])
+    const foundProduct = products.find(p => p.slug === productSlug)
+    setProduct(foundProduct || null)
+    setLoading(false)
+  }, [productSlug, products])
 
   // Close on Escape
   useEffect(() => {

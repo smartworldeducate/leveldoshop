@@ -1,0 +1,146 @@
+/* ================= ADMIN LAYOUT ================= */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 2rem;
+}
+
+/* ================= SIDEBAR ================= */
+
+.admin-sidebar {
+  width: 260px;
+  background: $main-bg;
+  box-shadow: $box-shadow;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #eee;
+  transition: width 0.3s ease, transform 0.3s ease;
+
+  &__logo {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: $main-color;
+    border-bottom: 1px solid #eee;
+  }
+
+  &__menu {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: $txt-second-color;
+    text-decoration: none;
+    transition: all 0.25s ease;
+
+    i {
+      font-size: 1.2rem;
+      min-width: 22px;
+    }
+
+    &:hover {
+      background: rgba($main-color, 0.08);
+      color: $main-color;
+    }
+
+    &.active {
+      background: $main-color;
+      color: white;
+    }
+  }
+
+  /* ===== COLLAPSED (DESKTOP) ===== */
+  &.collapsed {
+    width: 80px;
+
+    .label {
+      display: none;
+    }
+
+    &__logo span {
+      display: none;
+    }
+  }
+}
+
+/* ================= TOP BAR ================= */
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  .sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: $txt-main-color;
+
+    &.mobile {
+      display: none;
+    }
+  }
+}
+
+/* ================= MOBILE ================= */
+
+@include mobile {
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+
+  .admin-layout.sidebar-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .admin-topbar .sidebar-toggle {
+    display: none;
+
+    &.mobile {
+      display: block;
+    }
+  }
+
+  .admin-content {
+    padding: 1.2rem;
+  }
+}
+
+/* Close button */
+.sidebar-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  display: none;
+}
+
+@include mobile {
+  .sidebar-close {
+    display: block;
+  }
+}

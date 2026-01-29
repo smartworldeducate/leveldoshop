@@ -13,8 +13,8 @@ import {
 import slugify from "slugify";
 import { db } from "../../lib/firebaseClient";
 import { uploadToCloudinary } from "../../lib/cloudinary";
-import Loader from "../../components/Loader"; // Loader component we created
 import { LoadingContext } from "../../context/LoadingContext";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function AddProduct() {
   const emptyForm = {
@@ -36,7 +36,7 @@ export default function AddProduct() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const { setLoading } = useContext(LoadingContext); // global loader
+  const { setLoading } = useContext(LoadingContext);
 
   const colors = ["white", "red", "blue", "orange", "black"];
   const sizes = ["s", "m", "l", "xl", "xxl"];
@@ -58,9 +58,7 @@ export default function AddProduct() {
     if (type === "checkbox") {
       setForm(prev => ({
         ...prev,
-        [name]: checked
-          ? [...prev[name], value]
-          : prev[name].filter(v => v !== value),
+        [name]: checked ? [...prev[name], value] : prev[name].filter(v => v !== value),
       }));
     } else if (type === "file") {
       setForm(prev => ({ ...prev, files: [...prev.files, ...Array.from(files)] }));
@@ -69,37 +67,21 @@ export default function AddProduct() {
     }
   };
 
-  // 🔹 MODALS
-  const openAdd = () => {
-    setForm(emptyForm);
-    setIsEdit(false);
-    setModalOpen(true);
-  };
+  const openAdd = () => { setForm(emptyForm); setIsEdit(false); setModalOpen(true); };
+  const openEdit = (p) => { setForm({ ...p, files: [] }); setIsEdit(true); setModalOpen(true); };
 
-  const openEdit = (p) => {
-    setForm({ ...p, files: [] });
-    setIsEdit(true);
-    setModalOpen(true);
-  };
-
-  // 🔹 DELETE
-  const remove = async (id) => {
-    if (!confirm("Delete product?")) return;
-    await deleteDoc(doc(db, "products", id));
-    fetchProducts();
-  };
-
-  const confirmDelete = async () => {
-    await deleteDoc(doc(db, "products", deleteId));
-    setDeleteId(null);
-    fetchProducts();
+  const removeImage = (index) => {
+    setForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+      files: prev.files.filter((_, i) => i !== index),
+    }));
   };
 
   // 🔹 SUBMIT
   const submit = async (e) => {
     e.preventDefault();
-
-    setLoading(true); // Show loader
+    setLoading(true);
 
     try {
       let imageUrls = [...form.images];
@@ -111,6 +93,7 @@ export default function AddProduct() {
 
       if (imageUrls.length === 0) {
         alert("At least one image is required");
+        setLoading(false);
         return;
       }
 
@@ -129,30 +112,29 @@ export default function AddProduct() {
       if (isEdit) {
         await updateDoc(doc(db, "products", form.id), payload);
       } else {
-        await addDoc(collection(db, "products"), {
-          ...payload,
-          createdAt: serverTimestamp(),
-        });
+        await addDoc(collection(db, "products"), { ...payload, createdAt: serverTimestamp() });
       }
 
       setModalOpen(false);
       setForm(emptyForm);
       fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Firestore error:", err);
       alert("Something went wrong!");
     } finally {
-      setLoading(false); // Hide loader
+      setLoading(false);
     }
   };
 
-  // 🔹 REMOVE IMAGE FROM FORM BEFORE UPLOAD
-  const removeImage = (index) => {
-    setForm(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-      files: prev.files.filter((_, i) => i !== index),
-    }));
+  const confirmDelete = async () => {
+    try {
+      await deleteDoc(doc(db, "products", deleteId));
+      setDeleteId(null);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed!");
+    }
   };
 
   return (
@@ -195,15 +177,9 @@ export default function AddProduct() {
             <div className="modal-header danger">
               <h3>Delete Product</h3>
             </div>
-
             <div className="modal-body">
-              <p>
-                Are you sure you want to delete this product?
-                <br />
-                <strong>This action cannot be undone.</strong>
-              </p>
+              <p>Are you sure you want to delete this product?<br /><strong>This action cannot be undone.</strong></p>
             </div>
-
             <div className="modal-footer">
               <button className="btn-outline" onClick={() => setDeleteId(null)}>Cancel</button>
               <button className="btn-danger" onClick={confirmDelete}>Delete</button>
@@ -225,49 +201,22 @@ export default function AddProduct() {
               <div className="modal-body">
                 <div className="form-grid">
                   {/* Inputs */}
-                  <div className="field">
-                    <label>Product Title</label>
-                    <input name="title" value={form.title} onChange={handleChange} required />
-                  </div>
-                  <div className="field">
-                    <label>Price</label>
-                    <input type="number" name="price" value={form.price} onChange={handleChange} required />
-                  </div>
-                  <div className="field">
-                    <label>Stock</label>
-                    <input type="number" name="stock" value={form.stock} onChange={handleChange} required min={0} />
-                  </div>
-                  <div className="field">
-                    <label>Category</label>
-                    <input name="categorySlug" value={form.categorySlug} onChange={handleChange} required />
-                  </div>
-                  <div className="field full">
-                    <label>Description</label>
-                    <textarea name="description" value={form.description} onChange={handleChange} />
-                  </div>
+                  <div className="field"><label>Product Title</label><input name="title" value={form.title} onChange={handleChange} required /></div>
+                  <div className="field"><label>Price</label><input type="number" name="price" value={form.price} onChange={handleChange} required /></div>
+                  <div className="field"><label>Stock</label><input type="number" name="stock" value={form.stock} onChange={handleChange} required min={0} /></div>
+                  <div className="field"><label>Category</label><input name="categorySlug" value={form.categorySlug} onChange={handleChange} required /></div>
+                  <div className="field full"><label>Description</label><textarea name="description" value={form.description} onChange={handleChange} /></div>
 
                   {/* Colors & Sizes */}
-                  <div className="field full">
-                    <label>Colors</label>
-                    <div className="check-group">
-                      {colors.map(c => (
-                        <label key={c}>
-                          <input type="checkbox" name="colors" value={c} checked={form.colors.includes(c)} onChange={handleChange} />
-                          {c}
-                        </label>
-                      ))}
-                    </div>
+                  <div className="field full"><label>Colors</label>
+                    <div className="check-group">{colors.map(c => (
+                      <label key={c}><input type="checkbox" name="colors" value={c} checked={form.colors.includes(c)} onChange={handleChange} />{c}</label>
+                    ))}</div>
                   </div>
-                  <div className="field full">
-                    <label>Sizes</label>
-                    <div className="check-group">
-                      {sizes.map(s => (
-                        <label key={s}>
-                          <input type="checkbox" name="size" value={s} checked={form.size.includes(s)} onChange={handleChange} />
-                          {s}
-                        </label>
-                      ))}
-                    </div>
+                  <div className="field full"><label>Sizes</label>
+                    <div className="check-group">{sizes.map(s => (
+                      <label key={s}><input type="checkbox" name="size" value={s} checked={form.size.includes(s)} onChange={handleChange} />{s}</label>
+                    ))}</div>
                   </div>
 
                   {/* Multiple Image Upload */}
@@ -315,3 +264,5 @@ export default function AddProduct() {
     </div>
   );
 }
+
+AddProduct.getLayout = page => <AdminLayout>{page}</AdminLayout>;

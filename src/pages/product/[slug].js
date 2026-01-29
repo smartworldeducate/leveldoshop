@@ -6,45 +6,40 @@ import Grid from '../../components/Grid'
 import ProductCard from '../../components/ProductCard'
 import ProductView from '../../components/ProductView'
 
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../../lib/firebaseClient'
+// Redux
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchProducts } from '../../redux/products/productsSlice'
 
 export default function Product() {
   const router = useRouter()
   const { slug } = router.query
+  const dispatch = useDispatch()
+
+  const products = useSelector(state => state.products.items)
 
   const [product, setProduct] = useState(null)
   const [relatedProducts, setRelatedProducts] = useState([])
 
+  // Fetch all products from Redux
   useEffect(() => {
-    if (!slug) return
+    dispatch(fetchProducts())
+  }, [dispatch])
 
-    const fetchProduct = async () => {
-      try {
-        // Fetch main product
-        const productsRef = collection(db, 'products')
-        const snapshot = await getDocs(productsRef)
-        const productsArray = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+  // Set current product and related products
+  useEffect(() => {
+    if (!slug || !products || products.length === 0) return
 
-        const mainProduct = productsArray.find(p => p.slug === slug)
-        if (!mainProduct) return setProduct(null)
-        setProduct(mainProduct)
+    const mainProduct = products.find(p => p.slug === slug)
+    if (!mainProduct) return setProduct(null)
+    setProduct(mainProduct)
 
-        // Related products (same category, excluding current)
-        const related = productsArray
-          .filter(p => p.categorySlug === mainProduct.categorySlug && p.slug !== slug)
-          .slice(0, 8)
-        setRelatedProducts(related)
+    const related = products
+      .filter(p => p.categorySlug === mainProduct.categorySlug && p.slug !== slug)
+      .slice(0, 8)
+    setRelatedProducts(related)
+  }, [slug, products])
 
-      } catch (error) {
-        console.error('Error fetching product:', error)
-        setProduct(null)
-      }
-    }
-
-    fetchProduct()
-  }, [slug])
-
+  // Scroll to top on slug change
   useEffect(() => {
     if (typeof window !== 'undefined') window.scrollTo(0, 0)
   }, [slug])

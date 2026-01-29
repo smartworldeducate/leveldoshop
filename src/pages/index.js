@@ -13,38 +13,26 @@ import heroSliderData from '../assets/fake-data/hero-slider'
 import policy from '../assets/fake-data/policy'
 import banner from '../assets/images/banner.png'
 
-// Firebase
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../lib/firebaseClient'
+// Redux
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchProducts } from '../redux/products/productsSlice'
 
 export default function Home() {
-  const [products, setProducts] = useState([])
+  const dispatch = useDispatch()
+  const products = useSelector(state => state.products.items)
+
   const [bestSelling, setBestSelling] = useState([])
   const [newProducts, setNewProducts] = useState([])
   const [popularProducts, setPopularProducts] = useState([])
 
-  // Fetch products from Firestore
+  // Fetch products from Redux on mount
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const productCol = collection(db, 'products')
-        const productSnapshot = await getDocs(productCol)
-        const productList = productSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        setProducts(productList)
-      } catch (error) {
-        console.error('Error fetching products:', error)
-      }
-    }
-
-    fetchProducts()
-  }, [])
+    dispatch(fetchProducts())
+  }, [dispatch])
 
   // Categorize products for sections
   useEffect(() => {
-    if (products.length === 0) return
+    if (!products || products.length === 0) return
 
     const shuffleArray = (arr) => {
       const array = [...arr]

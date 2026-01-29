@@ -83,7 +83,13 @@ export default function Cart() {
     try {
       await addDoc(collection(db, 'order'), {
         user: orderData,
-        cartItems: cartProducts,
+        cartItems: cartProducts.map(item => ({
+          productId: item.product?.id,
+          title: item.product?.title,
+          images: item.product?.images || [], // ✅ include product images
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+        })),
         totalPrice,
         createdAt: serverTimestamp()
       })

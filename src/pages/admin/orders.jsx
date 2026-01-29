@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy
-} from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../lib/firebaseClient";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [openOrder, setOpenOrder] = useState(null);
 
-  // Fetch orders from Firebase
   const fetchOrders = async () => {
     try {
       const q = query(collection(db, "order"), orderBy("createdAt", "desc"));
@@ -32,7 +27,6 @@ export default function Orders() {
     fetchOrders();
   }, []);
 
-  // Helper to format timestamp safely
   const formatDate = (timestamp) => {
     if (!timestamp?.toDate) return "N/A";
     return timestamp.toDate().toLocaleDateString() + " " + timestamp.toDate().toLocaleTimeString();
@@ -67,21 +61,16 @@ export default function Orders() {
             <span>{order.user?.city || "N/A"}</span>
             <span>${order.totalPrice}</span>
             <span>{formatDate(order.createdAt)}</span>
-            <span>
-              <span className="badge success">Completed</span>
-            </span>
+            <span><span className="badge success">Completed</span></span>
             <span>
               <button
                 className="btn-outline btn-sm"
-                onClick={() =>
-                  setOpenOrder(openOrder === order.id ? null : order.id)
-                }
+                onClick={() => setOpenOrder(openOrder === order.id ? null : order.id)}
               >
                 View
               </button>
             </span>
 
-            {/* ORDER DETAILS */}
             {openOrder === order.id && (
               <div className="order-details">
                 <div className="order-section">
@@ -99,14 +88,13 @@ export default function Orders() {
                     {order.cartItems?.map((item, i) => (
                       <div key={i} className="order-item">
                         <img
-                          src={item.product?.images?.[0] || "/placeholder.png"}
-                          alt={item.product?.title || "Product Image"}
+                          src={item.images?.[0] || "/placeholder.png"}
+                          alt={item.title || "Product Image"}
+                          style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '8px' }}
                         />
                         <div>
-                          <p className="title">{item.product?.title || "Product"}</p>
-                          <p className="meta">
-                            Qty: {item.quantity} • ${item.price}
-                          </p>
+                          <p className="title">{item.title || "Product"}</p>
+                          <p className="meta">Qty: {item.quantity} • ${item.price}</p>
                         </div>
                         <span className="item-total">
                           ${Number(item.quantity) * Number(item.price)}
@@ -117,8 +105,7 @@ export default function Orders() {
                 </div>
 
                 <div className="order-footer">
-                  <strong>Total:</strong>
-                  <strong>${order.totalPrice}</strong>
+                  <strong>Total:</strong> <strong>${order.totalPrice}</strong>
                 </div>
               </div>
             )}
@@ -128,3 +115,5 @@ export default function Orders() {
     </div>
   );
 }
+
+Orders.getLayout = page => <AdminLayout>{page}</AdminLayout>;
