@@ -68,7 +68,11 @@ export default function Home() {
         <SectionBody>
           <Grid col={4} mdCol={2} smCol={1} gap={20}>
             {policy.map((item, index) => (
-              <Link key={index} href="/policy" legacyBehavior>
+              <Link
+                key={index}
+                href={`/policy?tab=${item.id}`}
+                legacyBehavior
+              >
                 <a>
                   <PolicyCard
                     name={item.name}
@@ -114,6 +118,7 @@ export default function Home() {
                 name={item.title}
                 price={Number(item.price)}
                 slug={item.slug}
+                stock={item.stock}
               />
             ))}
           </Grid>

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 const menu = [
   { label: "Add Product", path: "/admin/add-product", icon: "bx bx-plus-circle" },
   { label: "Orders", path: "/admin/orders", icon: "bx bx-receipt" },
-  { label: "Users", path: "/admin/users", icon: "bx bx-user" },
+  // { label: "Users", path: "/admin/users", icon: "bx bx-user" },
 ];
 
 export default function AdminSidebar({ collapsed, onClose }) {

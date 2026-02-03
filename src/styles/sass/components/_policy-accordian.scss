@@ -1,0 +1,150 @@
+.policy-page {
+  max-width: 1920px; // increased from 920px
+  margin: 0 auto;
+  padding: 48px 20px;
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 32px;
+    color: $txt-main-color;
+    text-align: center;
+  }
+}
+
+/* ============================
+   Accordion Container
+============================ */
+
+.policy-accordion {
+  background: $main-bg;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  box-shadow: $box-shadow;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &.active {
+    border-color: $main-color;
+  }
+}
+
+/* ============================
+   Header
+============================ */
+
+.policy-accordion__header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: rgba($main-color, 0.04);
+  }
+}
+
+.policy-accordion__title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  i {
+    font-size: 28px;
+    color: $main-color;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $txt-main-color;
+    margin: 0;
+  }
+}
+
+/* ============================
+   Toggle Icon
+============================ */
+
+.toggle-icon {
+  font-size: 26px;
+  color: $main-color;
+  transition: transform 0.25s ease;
+
+  .policy-accordion.active & {
+    transform: rotate(180deg);
+  }
+}
+
+/* ============================
+   Content
+============================ */
+
+.policy-accordion__content {
+  padding: 0 24px 24px;
+  animation: fadeSlide 0.3s ease;
+
+  .desc {
+    margin: 12px 0 16px;
+    color: $txt-second-color;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 10px;
+    color: $txt-main-color;
+    line-height: 1.6;
+    position: relative;
+
+    &::marker {
+      color: $main-color;
+    }
+  }
+}
+
+/* ============================
+   Animation
+============================ */
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================
+   Responsive
+============================ */
+
+@media (max-width: $mobile-width) {
+  .policy-page {
+    padding: 32px 16px;
+  }
+
+  .policy-accordion__header {
+    padding: 16px 18px;
+  }
+
+  .policy-accordion__title h3 {
+    font-size: 1rem;
+  }
+
+  .policy-accordion__title i {
+    font-size: 24px;
+  }
+}

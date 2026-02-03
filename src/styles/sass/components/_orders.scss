@@ -168,13 +168,18 @@
   justify-content: center;
 }
 
-.btn-danger.btn-sm {
+.btn-light-danger.btn-sm {
   padding: 6px 10px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  /* light danger styles */
+  background-color: #ffe3e3;
+  color: #c92a2a;
 }
+
 
 .btn-outline.btn-sm {
   display: flex;

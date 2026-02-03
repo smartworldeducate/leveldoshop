@@ -28,9 +28,9 @@ export default function Footer() {
           <div>
             <div className="footer__title">Support Hotline</div>
             <div className="footer__content">
-              <p>Order Support <strong>0123456789</strong></p>
-              <p>Order Inquiries <strong>0123456789</strong></p>
-              <p>Feedback & Complaints <strong>0123456789</strong></p>
+              <p>Order Support <strong>03010483942</strong></p>
+              <p>Order Inquiries <strong>03039255409</strong></p>
+              <p>Feedback & Complaints <strong>03017897426</strong></p>
             </div>
           </div>
 
