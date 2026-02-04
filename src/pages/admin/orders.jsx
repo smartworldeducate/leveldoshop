@@ -42,7 +42,7 @@ export default function Orders() {
           <span>Total</span>
           <span>Date</span>
           <span>Status</span>
-          <span>Action</span>
+          <span>Actions</span>
         </div>
 
         {status === "loading" && (
@@ -63,6 +63,7 @@ export default function Orders() {
               <span className="price">${order.totalPrice}</span>
               <span>{formatDate(order.createdAt)}</span>
 
+              {/* STATUS */}
               <span
                 className={`badge ${
                   order.status === "completed" ? "success" : "pending"
@@ -76,18 +77,23 @@ export default function Orders() {
                 {order.status || "pending"}
               </span>
 
+              {/* ACTIONS */}
               <span className="actions">
+                {/* VIEW */}
                 <button
                   className="btn-outline btn-sm"
                   onClick={() =>
                     setOpenOrder(openOrder === order.id ? null : order.id)
                   }
+                  title="View order details"
                 >
                   <Eye size={16} />
                 </button>
 
+                {/* COMPLETE */}
                 <button
                   className="btn-main btn-sm"
+                  title="Complete order"
                   disabled={
                     processingId === order.id ||
                     order.status === "completed"
@@ -101,14 +107,17 @@ export default function Orders() {
                   )}
                 </button>
 
+                {/* DELETE */}
                 <button
                   className="btn-light-danger btn-sm"
-                  onClick={() => setDeleteModal(order.id)}
+                  title="Delete order"
+                  onClick={() => setDeleteModal(order)}
                 >
                   <Trash2 size={16} />
                 </button>
               </span>
 
+              {/* ORDER DETAILS */}
               {openOrder === order.id && (
                 <div className="order-details">
                   <div className="order-section">
@@ -153,16 +162,26 @@ export default function Orders() {
           ))}
       </div>
 
+      {/* DELETE CONFIRMATION */}
       {deleteModal && (
         <div className="admin-modal">
           <div className="modal-box small">
             <div className="modal-header danger">
-              {/* <Trash2 size={24} /> */}
               <h3>Delete Order</h3>
             </div>
 
             <div className="modal-body">
-              Are you sure you want to delete this order?
+              {deleteModal.status === "completed" ? (
+                <p>
+                  This order is <strong>completed</strong>.
+                  <br />
+                  Deleting it will <strong>restore product stock</strong>.
+                  <br />
+                  Are you sure?
+                </p>
+              ) : (
+                <p>Are you sure you want to delete this order?</p>
+              )}
             </div>
 
             <div className="modal-footer">
@@ -175,13 +194,13 @@ export default function Orders() {
 
               <button
                 className="btn-danger"
-                disabled={processingId === deleteModal}
+                disabled={processingId === deleteModal.id}
                 onClick={() => {
-                  dispatch(deleteOrder(deleteModal));
+                  dispatch(deleteOrder(deleteModal.id));
                   setDeleteModal(null);
                 }}
               >
-                {processingId === deleteModal ? (
+                {processingId === deleteModal.id ? (
                   <Loader2 className="spin" size={16} />
                 ) : (
                   "Delete Order"

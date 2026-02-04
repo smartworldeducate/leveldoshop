@@ -7,12 +7,13 @@ import {
   deleteDoc,
   doc,
   runTransaction,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseClient";
 
 /* ============================
    FETCH ORDERS
-   ============================ */
+============================ */
 export const fetchOrders = createAsyncThunk(
   "adminOrders/fetchOrders",
   async () => {
@@ -30,63 +31,53 @@ export const fetchOrders = createAsyncThunk(
 );
 
 /* ============================
-   TOGGLE STATUS + UPDATE STOCK
-   ============================ */
+   COMPLETE ORDER + REDUCE STOCK
+============================ */
 export const toggleOrderStatus = createAsyncThunk(
   "adminOrders/toggleOrderStatus",
   async (order, { rejectWithValue }) => {
     try {
-      const isCompleting = order.status !== "completed";
+      // Only allow completion once
+      if (order.status === "completed") {
+        return rejectWithValue("Order already completed");
+      }
 
       await runTransaction(db, async (transaction) => {
         const orderRef = doc(db, "order", order.id);
 
-        // READ FIRST
-        const productReads = [];
+        // 1️⃣ READ + VALIDATE STOCK
+        for (const item of order.cartItems || []) {
+          const productRef = doc(db, "products", item.productId);
+          const productSnap = await transaction.get(productRef);
 
-        if (isCompleting) {
-          for (const item of order.cartItems || []) {
-            const productRef = doc(db, "products", item.productId);
-            const snap = await transaction.get(productRef);
-
-            if (!snap.exists()) {
-              throw new Error("Product not found");
-            }
-
-            productReads.push({
-              ref: productRef,
-              snap,
-              qty: item.quantity,
-              title: item.title,
-            });
+          if (!productSnap.exists()) {
+            throw new Error("Product not found");
           }
-        }
 
-        // VALIDATE
-        for (const p of productReads) {
-          const stock = p.snap.data().stock ?? 0;
-          if (stock < p.qty) {
-            throw new Error(`Insufficient stock for ${p.title}`);
+          const stock = productSnap.data().stock ?? 0;
+
+          if (stock < item.quantity) {
+            throw new Error(
+              `Insufficient stock for ${item.title}`
+            );
           }
-        }
 
-        // WRITE
-        for (const p of productReads) {
-          const stock = p.snap.data().stock ?? 0;
-          transaction.update(p.ref, {
-            stock: stock - p.qty,
+          // 2️⃣ REDUCE STOCK
+          transaction.update(productRef, {
+            stock: stock - item.quantity,
           });
         }
 
+        // 3️⃣ UPDATE ORDER STATUS
         transaction.update(orderRef, {
-          status: isCompleting ? "completed" : "pending",
-          completedAt: isCompleting ? new Date() : null,
+          status: "completed",
+          completedAt: new Date(),
         });
       });
 
       return {
         id: order.id,
-        status: isCompleting ? "completed" : "pending",
+        status: "completed",
       };
     } catch (err) {
       return rejectWithValue(err.message);
@@ -95,13 +86,42 @@ export const toggleOrderStatus = createAsyncThunk(
 );
 
 /* ============================
-   DELETE ORDER
-   ============================ */
+   DELETE ORDER + RESTORE STOCK
+============================ */
 export const deleteOrder = createAsyncThunk(
   "adminOrders/deleteOrder",
   async (orderId, { rejectWithValue }) => {
     try {
-      await deleteDoc(doc(db, "order", orderId));
+      const orderRef = doc(db, "order", orderId);
+      const orderSnap = await getDoc(orderRef);
+
+      if (!orderSnap.exists()) {
+        throw new Error("Order not found");
+      }
+
+      const order = orderSnap.data();
+
+      await runTransaction(db, async (transaction) => {
+        // 1️⃣ RESTORE STOCK (ONLY IF COMPLETED)
+        if (order.status === "completed") {
+          for (const item of order.cartItems || []) {
+            const productRef = doc(db, "products", item.productId);
+            const productSnap = await transaction.get(productRef);
+
+            if (!productSnap.exists()) continue;
+
+            const stock = productSnap.data().stock ?? 0;
+
+            transaction.update(productRef, {
+              stock: stock + item.quantity,
+            });
+          }
+        }
+
+        // 2️⃣ DELETE ORDER
+        transaction.delete(orderRef);
+      });
+
       return orderId;
     } catch (err) {
       return rejectWithValue(err.message);
@@ -111,12 +131,12 @@ export const deleteOrder = createAsyncThunk(
 
 /* ============================
    SLICE
-   ============================ */
+============================ */
 const ordersSlice = createSlice({
   name: "adminOrders",
   initialState: {
     items: [],
-    status: "idle", // idle | loading | succeeded | failed
+    status: "idle",
     processingId: null,
     error: null,
   },
@@ -137,7 +157,7 @@ const ordersSlice = createSlice({
         state.error = action.payload || action.error.message;
       })
 
-      // TOGGLE STATUS
+      // COMPLETE ORDER
       .addCase(toggleOrderStatus.pending, (state, action) => {
         state.processingId = action.meta.arg.id;
       })
