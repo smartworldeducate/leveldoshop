@@ -16,6 +16,7 @@ import banner from '../assets/images/banner.png'
 // Redux
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProducts } from '../redux/products/productsSlice'
+import WhatsAppButton from '@/components/WhatsAppButton'
 
 export default function Home() {
   const dispatch = useDispatch()
@@ -162,6 +163,7 @@ export default function Home() {
           </Grid>
         </SectionBody>
       </Section>
+      <WhatsAppButton/>
     </>
   )
 }

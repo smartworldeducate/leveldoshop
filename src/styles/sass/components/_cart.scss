@@ -113,7 +113,7 @@
                 cursor: pointer;
 
                 &:hover {
-                    color: $main-color;
+                    color: rgb(248, 110, 110);
                 }
             }
         }
@@ -139,7 +139,7 @@
 .cart-modal-content {
     background: $main-bg;
     padding: 2rem;
-    border-radius: 16px;
+    // border-radius: 16px;
     width: 100%;
     max-width: 500px;
     box-shadow: $box-shadow;

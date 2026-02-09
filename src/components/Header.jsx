@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useSelector } from 'react-redux'
 
 import logo from '../assets/images/Logo-2.png'
+import { useRouter } from 'next/router'
 
 const mainNav = [
   { display: 'Home', path: '/' },
@@ -14,6 +15,7 @@ const mainNav = [
 ]
 
 export default function Header() {
+  const router = useRouter()
   const cartItems = useSelector((state) => state.cartItems.value)
   const pathname = usePathname()
   const activeNav = mainNav.findIndex((e) => e.path === pathname)
@@ -72,7 +74,12 @@ export default function Header() {
           {/* Right Menu */}
     <div className="header__menu__right">
   <div className="header__menu__item header__menu__right__item">
-    <i className="bx bx-search text-2xl"></i>
+    {/* <i className="bx bx-search text-2xl"></i> */}
+    <i
+  className="bx bx-search text-2xl"
+  style={{ cursor: "pointer" }}
+  onClick={() => router.push("/catalog?search=1")}
+></i>
   </div>
 
   <div className="header__menu__item header__menu__right__item">

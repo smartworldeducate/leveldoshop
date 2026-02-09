@@ -1,0 +1,56 @@
+.whatsapp-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+
+    background: #25d366; // WhatsApp green
+    color: #ffffff;
+
+    @include flex(center, center);
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+    /* Desktop hover only */
+    &:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Tablet */
+    @include tablet {
+        width: 52px;
+        height: 52px;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    /* Mobile */
+    @include mobile {
+        width: 48px;
+        height: 48px;
+        bottom: 16px;
+        right: 16px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    &__icon {
+        width: 28px;
+        height: 28px;
+
+        @include tablet {
+            width: 26px;
+            height: 26px;
+        }
+
+        @include mobile {
+            width: 24px;
+            height: 24px;
+        }
+    }
+}

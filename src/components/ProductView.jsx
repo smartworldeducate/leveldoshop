@@ -149,8 +149,8 @@ const ProductView = ({ product: propProduct }) => {
 
         {/* Buttons */}
         <div className="product__info__item">
-          <Button onClick={addToCart}>Add to cart</Button>
-          <Button onClick={goToCart}>Buy now</Button>
+          <Button size='sm' onClick={addToCart}>Add to cart</Button>
+          <Button size='sm' onClick={goToCart}>Buy now</Button>
         </div>
       </div>
     </div>

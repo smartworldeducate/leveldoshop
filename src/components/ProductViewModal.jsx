@@ -54,7 +54,7 @@ const ProductViewModal = () => {
         {!loading && product === null && <p>Product not found!</p>}
 
         <div className="product-view__modal__content__close">
-          <Button size="sm" onClick={() => dispatch(remove())}>
+          <Button size="sma" onClick={() => dispatch(remove())}>
             Close
           </Button>
         </div>

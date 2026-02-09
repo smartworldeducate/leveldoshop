@@ -6,9 +6,14 @@ import CheckBox from '../components/CheckBox'
 import Button from '../components/Button'
 import InfinityList from '../components/InfinityList'
 import { fetchProducts } from '../redux/products/productsSlice'
+import { useRouter } from 'next/router'
+import SearchModal from '@/components/SearchModal'
 
 export default function Catalog() {
+   const router = useRouter()
   const dispatch = useDispatch()
+  const [searchText, setSearchText] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const allProducts = useSelector(state => state.products.items)
   const [products, setProducts] = useState([])
   const [filter, setFilter] = useState({ category: [], color: [], size: [] })
@@ -18,6 +23,18 @@ export default function Catalog() {
   useEffect(() => {
     dispatch(fetchProducts())
   }, [dispatch])
+
+  useEffect(() => {
+  if (router.query.search === "1") {
+    setShowSearch(true);
+  }
+}, [router.query]);
+
+const closeSearch = () => {
+  setShowSearch(false);
+  router.replace("/catalog", undefined, { shallow: true });
+};
+
 
   const filterSelect = (type, checked, item) => {
     if (checked) {
@@ -50,17 +67,48 @@ export default function Catalog() {
   const clearFilter = () => setFilter({ category: [], color: [], size: [] })
 
   const updateProducts = useCallback(() => {
-    if (!allProducts || allProducts.length === 0) return
-    let temp = [...allProducts]
-    if (filter.category.length > 0) temp = temp.filter(p => filter.category.includes(p.categorySlug))
-    if (filter.color.length > 0) temp = temp.filter(p => p.colors.some(c => filter.color.includes(c)))
-    if (filter.size.length > 0) temp = temp.filter(p => p.size.some(s => filter.size.includes(s)))
-    setProducts(temp)
-  }, [allProducts, filter])
+  if (!allProducts || allProducts.length === 0) return;
+
+  let temp = [...allProducts];
+
+  // 🔎 Name search
+  if (searchText) {
+    temp = temp.filter(p =>
+      p.title.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }
+
+  if (filter.category.length > 0)
+    temp = temp.filter(p => filter.category.includes(p.categorySlug));
+
+  if (filter.color.length > 0)
+    temp = temp.filter(p => p.colors.some(c => filter.color.includes(c)));
+
+  if (filter.size.length > 0)
+    temp = temp.filter(p => p.size.some(s => filter.size.includes(s)));
+
+  setProducts(temp);
+}, [allProducts, filter, searchText]);
+
 
   useEffect(() => { updateProducts() }, [updateProducts])
 
-  const showHideFilter = () => filterRef.current.classList.toggle('active')
+  // const showHideFilter = () => filterRef.current.classList.toggle('active')
+  const showHideFilter = () => {
+  filterRef.current.classList.toggle("active");
+
+  if (router.query.search) {
+    router.replace("/catalog", undefined, { shallow: true });
+  }
+};
+
+
+  useEffect(() => {
+  if (router.query.search === "1") {
+    filterRef.current?.classList.add("active");
+  }
+}, [router.query]);
+
 
   return (
     <>
@@ -135,6 +183,12 @@ export default function Catalog() {
           }))} />
         </div>
       </div>
+      <SearchModal
+        isOpen={showSearch}
+        onClose={closeSearch}
+        value={searchText}
+        onChange={setSearchText}
+      />
     </>
   )
 }
