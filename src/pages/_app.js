@@ -11,6 +11,7 @@ import { hydrate } from '../redux/shopping-cart/cartItemsSlide'
 
 import { LoadingProvider, LoadingContext } from '../context/LoadingContext'
 import Loader from '../components/Loader'
+import WhatsAppButton from '@/components/WhatsAppButton'
 
 function HydrateCart({ children }) {
   const dispatch = useDispatch()
@@ -45,6 +46,7 @@ function MyApp({ Component, pageProps }) {
         <HydrateCart>
           <AppWrapper>
             {getLayout(<Component {...pageProps} />)}
+             <WhatsAppButton/>
           </AppWrapper>
         </HydrateCart>
       </LoadingProvider>

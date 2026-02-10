@@ -15,9 +15,16 @@
     gap: 60px;
     flex-wrap: wrap;
 
-    @media (max-width: $tablet-width) {
+    /* Tablet only */
+    @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
       flex-direction: column;
-      gap: 40px;
+      gap: 35px;
+    }
+
+    /* Mobile */
+    @include mobile {
+      flex-direction: column;
+      gap: 25px;
     }
   }
 
@@ -25,9 +32,20 @@
   &__form-wrapper {
     flex: 1 1 500px;
     background: $main-bg;
-    // border-radius: 16px;
     padding: 40px;
     box-shadow: $box-shadow;
+    border-radius: 16px;
+    width: 100%;
+
+    /* Tablet */
+    @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
+      padding: 30px;
+    }
+
+    /* Mobile */
+    @include mobile {
+      padding: 20px;
+    }
   }
 
   &__info {
@@ -35,6 +53,16 @@
       font-size: 2rem;
       margin-bottom: 20px;
       color: $txt-main-color;
+
+      /* Tablet */
+      @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
+        font-size: 1.75rem;
+      }
+
+      /* Mobile */
+      @include mobile {
+        font-size: 1.5rem;
+      }
     }
 
     p {
@@ -50,9 +78,19 @@
 
       iframe {
         width: 100%;
-        height: 290px;
+        height: 350px;
         border: 0;
         border-radius: 16px;
+
+        /* Tablet */
+        @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
+          height: 250px;
+        }
+
+        /* Mobile */
+        @include mobile {
+          height: 220px;
+        }
       }
     }
   }
@@ -65,6 +103,7 @@
       border-radius: 12px;
       margin-bottom: 25px;
       font-weight: 500;
+      text-align: center;
     }
 
     .contact-page__form {
@@ -73,15 +112,15 @@
 
       .form-group {
         position: relative;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
 
         input,
         textarea {
           width: 100%;
-          padding: 18px 20px;
+          padding: 16px 18px;
           font-size: 1rem;
           border-radius: 12px;
-          border: 1px solid lighten($txt-second-color, 30%);
+          border: 1px solid lighten($txt-second-color, 35%);
           outline: none;
           transition: border 0.3s, box-shadow 0.3s;
 
@@ -91,13 +130,28 @@
           }
         }
 
+        textarea {
+          min-height: 120px;
+          resize: vertical;
+
+          /* Tablet */
+          @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
+            min-height: 100px;
+          }
+
+          /* Mobile */
+          @include mobile {
+            min-height: 90px;
+          }
+        }
+
         label {
           position: absolute;
           top: -10px;
-          left: 20px;
+          left: 16px;
           background: $main-bg;
           padding: 0 6px;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           color: $txt-second-color;
         }
 
@@ -112,7 +166,7 @@
         margin-top: 10px;
         background-color: $btn-main-bg;
         color: $btn-main-color;
-        padding: 15px 20px;
+        padding: 14px 18px;
         border-radius: 12px;
         font-weight: 600;
         transition: background 0.3s, transform 0.2s;
@@ -127,33 +181,27 @@
           cursor: not-allowed;
           transform: none;
         }
+
+        /* Tablet */
+        @media (max-width: $tablet-width) and (min-width: calc(#{$mobile-width} + 1px)) {
+          padding: 13px 16px;
+          font-size: 0.95rem;
+        }
+
+        /* Mobile */
+        @include mobile {
+          padding: 12px 16px;
+          font-size: 0.9rem;
+        }
       }
     }
   }
 
-  @media (max-width: $tablet-width) {
+  @include tablet {
     padding: 40px 20px;
   }
 
-  @media (max-width: $mobile-width) {
+  @include mobile {
     padding: 20px 15px;
-
-    &__info,
-    &__form-wrapper {
-      padding: 20px;
-    }
-
-    &__info h2 {
-      font-size: 1.75rem;
-    }
-
-    &__form-wrapper .contact-page__form input,
-    &__form-wrapper .contact-page__form textarea {
-      padding: 14px 16px;
-    }
-
-    &__form-wrapper .contact-page__form button {
-      padding: 12px 16px;
-    }
   }
 }
