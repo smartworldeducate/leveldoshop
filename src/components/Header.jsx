@@ -72,53 +72,62 @@ export default function Header() {
           </div>
 
           {/* Right Menu */}
-    <div className="header__menu__right">
+            <div className="header__menu__right">
+  {/* Search Icon */}
   <div className="header__menu__item header__menu__right__item">
-    {/* <i className="bx bx-search text-2xl"></i> */}
     <i
-  className="bx bx-search text-2xl"
-  style={{ cursor: "pointer" }}
-  onClick={() => router.push("/catalog?search=1")}
-></i>
+      className="bx bx-search text-2xl"
+      style={{ cursor: "pointer" }}
+      onClick={() => router.push("/catalog?search=1")}
+    ></i>
   </div>
 
+  {/* Cart Icon */}
   <div className="header__menu__item header__menu__right__item">
-  <Link href="/cart">
-    <div className="cart-icon-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
-      <i className="bx bx-shopping-bag" style={{ fontSize: '24px' }}></i>
+    <Link href="/cart">
+      <div
+        className="cart-icon-wrapper"
+        style={{ position: 'relative', display: 'inline-block' }}
+      >
+        <i className="bx bx-shopping-bag" style={{ fontSize: '24px' }}></i>
 
-      {cartItems?.length > 0 && (
-        <span
-          className="cart-badge"
-          style={{
-            position: 'absolute',
-            top: '-6px',
-            right: '-6px',
-            backgroundColor: '#f44336',
-            color: '#fff',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            borderRadius: '50%',
-            width: '20px',
-            height: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: '1',
-          }}
-        >
-          {cartItems.length}
-        </span>
-      )}
-    </div>
-  </Link>
-</div>
+        {cartItems?.length > 0 && (
+          <span
+            className="cart-badge"
+            style={{
+              position: 'absolute',
+              top: '-6px',
+              right: '-6px',
+              backgroundColor: '#f44336',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: '1',
+            }}
+          >
+            {cartItems.length}
+          </span>
+        )}
+      </div>
+    </Link>
+  </div>
 
-
+  {/* User Icon */}
   <div className="header__menu__item header__menu__right__item">
-    <i className="bx bx-user text-2xl"></i>
+    <i
+      className="bx bx-user text-2xl"
+      style={{ cursor: "pointer" }}
+      onClick={() => router.push("/login")} // 🔹 Open login page
+    ></i>
   </div>
 </div>
+
 
         </div>
       </div>

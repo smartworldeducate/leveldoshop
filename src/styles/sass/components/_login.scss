@@ -1,0 +1,110 @@
+// Variables
+$main-bg: #fff;
+$main-color: #4267b2;
+
+$txt-main-color: #000;
+$txt-second-color: #8d8d8d;
+$txt-white: #fff;
+
+$btn-main-bg: $main-color;
+$btn-main-color: #fff;
+
+$box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
+$mobile-width: 600px;
+$tablet-width: 1024px;
+
+// Mixins
+@mixin flex($align-item, $justify-content) {
+  display: flex;
+  align-items: $align-item;
+  justify-content: $justify-content;
+}
+
+@mixin mobile {
+  @media only screen and (max-width: $mobile-width) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media only screen and (max-width: $tablet-width) {
+    @content;
+  }
+}
+
+// Login Page Styles
+.login-page {
+  @include flex(center, center);
+  height: 100vh;
+  background: lighten($main-color, 50%);
+
+  .login-wrapper {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+
+    .login-card {
+      background: $main-bg;
+      border-radius: 12px;
+      box-shadow: $box-shadow;
+      padding: 2.5rem 2rem;
+      transition: all 0.3s ease;
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+
+        h1 {
+          color: $txt-main-color;
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        p {
+          color: $txt-second-color;
+          font-size: 1rem;
+        }
+      }
+
+      .login-body {
+        @include flex(center, center);
+
+        .google-btn {
+          @include flex(center, center);
+          gap: 0.5rem;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: $btn-main-bg;
+          color: $btn-main-color;
+          font-weight: 600;
+          font-size: 1rem;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: $box-shadow;
+
+          &:hover {
+            background: darken($btn-main-bg, 5%);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+
+  @include mobile {
+    .login-wrapper {
+      padding: 1rem;
+
+      .login-card {
+        padding: 2rem 1.5rem;
+      }
+    }
+  }
+}

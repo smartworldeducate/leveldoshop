@@ -13,6 +13,9 @@ import { LoadingProvider, LoadingContext } from '../context/LoadingContext'
 import Loader from '../components/Loader'
 import WhatsAppButton from '@/components/WhatsAppButton'
 
+// ✅ Import AuthContext
+import { AuthProvider } from '../context/AuthContext'
+
 function HydrateCart({ children }) {
   const dispatch = useDispatch()
 
@@ -35,7 +38,7 @@ function AppWrapper({ children }) {
 }
 
 function MyApp({ Component, pageProps }) {
-  // ✅ IMPORTANT PART
+  // Layout system
   const getLayout =
     Component.getLayout ||
     ((page) => <Layout>{page}</Layout>)
@@ -43,12 +46,14 @@ function MyApp({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <LoadingProvider>
-        <HydrateCart>
-          <AppWrapper>
-            {getLayout(<Component {...pageProps} />)}
-             <WhatsAppButton/>
-          </AppWrapper>
-        </HydrateCart>
+        <AuthProvider> {/* ✅ Wrap with AuthProvider */}
+          <HydrateCart>
+            <AppWrapper>
+              {getLayout(<Component {...pageProps} />)}
+              <WhatsAppButton/>
+            </AppWrapper>
+          </HydrateCart>
+        </AuthProvider>
       </LoadingProvider>
     </Provider>
   )
