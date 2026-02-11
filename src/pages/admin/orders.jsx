@@ -7,7 +7,7 @@ import {
 } from "../../redux/admin/ordersSlice";
 import { Eye, Trash2, CheckCircle, Clock, Loader2 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
-
+import * as XLSX from "xlsx";
 export default function Orders() {
   const dispatch = useDispatch();
 
@@ -25,12 +25,55 @@ export default function Orders() {
   const formatDate = (ts) =>
     ts?.toDate ? ts.toDate().toLocaleString() : "N/A";
 
+ 
+
+  const exportToExcel = () => {
+  if (!items.length) {
+    alert("No orders to export");
+    return;
+  }
+
+  const formattedData = items.map((order) => ({
+    OrderID: order.id,
+    CustomerName: order.user?.name || "",
+    Email: order.user?.email || "",
+    Phone: order.user?.phone || "",
+    City: order.user?.city || "",
+    Address: order.user?.address || "",
+    TotalPrice: order.totalPrice,
+    Status: order.status || "pending",
+    Date: order.createdAt?.toDate
+      ? order.createdAt.toDate().toLocaleString()
+      : "",
+    Products: order.cartItems
+      ?.map(
+        (item) =>
+          `${item.title} (Qty: ${item.quantity} × $${item.price})`
+      )
+      .join(" | "),
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+
+  XLSX.writeFile(workbook, "orders.xlsx");
+};
+
+ 
+ 
   return (
     <div className="admin container">
       <div className="admin__header">
         <h2>Orders</h2>
-        <span className="order-count">{items.length} orders</span>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button className="btn-main" onClick={exportToExcel}>
+            Export Excel
+          </button>
+          <span className="order-count">{items.length} orders</span>
+        </div>
       </div>
+
 
       <div className="admin__table orders-table">
         <div className="table-head">

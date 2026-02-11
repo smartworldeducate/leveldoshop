@@ -15,7 +15,7 @@ import { db } from "../../lib/firebaseClient";
 import { uploadToCloudinary } from "../../lib/cloudinary";
 import { LoadingContext } from "../../context/LoadingContext";
 import AdminLayout from "../../components/admin/AdminLayout";
-
+import * as XLSX from "xlsx";
 export default function AddProduct() {
   const emptyForm = {
     id: null,
@@ -37,7 +37,7 @@ export default function AddProduct() {
   const [isEdit, setIsEdit] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const { setLoading } = useContext(LoadingContext);
-
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
   const colors = ["white", "red", "blue", "orange", "black"];
   const sizes = ["s", "m", "l", "xl", "xxl"];
 
@@ -77,6 +77,72 @@ export default function AddProduct() {
       files: prev.files.filter((_, i) => i !== index),
     }));
   };
+
+const resizeImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      img.src = e.target.result;
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      let width = img.width;
+      let height = img.height;
+
+      const MAX_DIMENSION = 1600;
+
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        if (width > height) {
+          height = (height * MAX_DIMENSION) / width;
+          width = MAX_DIMENSION;
+        } else {
+          width = (width * MAX_DIMENSION) / height;
+          height = MAX_DIMENSION;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.9;
+
+      const compress = () => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject("Compression failed");
+
+            if (blob.size <= MAX_IMAGE_SIZE || quality <= 0.4) {
+              resolve(
+                new File([blob], file.name, {
+                  type: file.type, // ✅ keep original type
+                  lastModified: Date.now(),
+                })
+              );
+            } else {
+              quality -= 0.1;
+              compress();
+            }
+          },
+          file.type === "image/png" ? "image/png" : "image/jpeg",
+          quality
+        );
+      };
+
+      compress();
+    };
+
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 
   // 🔹 SUBMIT
   const submit = async (e) => {
@@ -126,6 +192,37 @@ export default function AddProduct() {
     }
   };
 
+  const exportToExcel = () => {
+  if (!products.length) {
+    alert("No products to export");
+    return;
+  }
+
+  // Format data for Excel
+  const formattedData = products.map(p => ({
+    Title: p.title,
+    Price: p.price,
+    Stock: p.stock ?? 0,
+    Category: p.categorySlug,
+    Colors: p.colors?.join(", "),
+    Sizes: p.size?.join(", "),
+    Description: p.description,
+    Images: p.images?.join(", "),
+    Slug: p.slug,
+  }));
+
+  // Create worksheet
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+  // Download file
+  XLSX.writeFile(workbook, "products.xlsx");
+};
+
+
   const confirmDelete = async () => {
     try {
       await deleteDoc(doc(db, "products", deleteId));
@@ -139,10 +236,19 @@ export default function AddProduct() {
 
   return (
     <div className="admin container">
+
       <div className="admin__header">
         <h2>Products</h2>
-        <button className="btn-main" onClick={openAdd}>Add Product</button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="btn-main" onClick={exportToExcel}>
+            Export Excel
+          </button>
+          <button className="btn-main" onClick={openAdd}>
+            Add Product
+          </button>
+        </div>
       </div>
+
 
       {/* TABLE */}
       <div className="admin__table">
@@ -237,11 +343,40 @@ export default function AddProduct() {
                       ))}
                     </div>
 
-                    <label className="image-drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => {
+                    <label className="image-drop" onDragOver={(e) => e.preventDefault()} onDrop={async (e) => {
                       e.preventDefault();
-                      setForm(prev => ({ ...prev, files: [...prev.files, ...Array.from(e.dataTransfer.files)] }));
-                    }}>
-                      <input type="file" hidden multiple onChange={(e) => setForm(prev => ({ ...prev, files: [...prev.files, ...Array.from(e.target.files)] }))} />
+
+                      const droppedFiles = Array.from(e.dataTransfer.files);
+                      const resizedFiles = await Promise.all(
+                        droppedFiles.map(file => resizeImage(file))
+                      );
+
+                      setForm(prev => ({
+                        ...prev,
+                        files: [...prev.files, ...resizedFiles],
+                      }));
+                    }}
+                    >
+                      {/* <input type="file" hidden multiple onChange={(e) => setForm(prev => ({ ...prev, files: [...prev.files, ...Array.from(e.target.files)] }))} /> */}
+                      <input
+                        type="file"
+                        hidden
+                        multiple
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const selectedFiles = Array.from(e.target.files);
+
+                          const resizedFiles = await Promise.all(
+                            selectedFiles.map(file => resizeImage(file))
+                          );
+
+                          setForm(prev => ({
+                            ...prev,
+                            files: [...prev.files, ...resizedFiles],
+                          }));
+                        }}
+                      />
+
                       <div className="image-drop__content">
                         <span className="image-drop__icon">📷</span>
                         <p>Drag & drop images here</p>
