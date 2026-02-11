@@ -17,7 +17,7 @@ export default function Orders() {
 
   const [openOrder, setOpenOrder] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
-
+const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => {
     dispatch(fetchOrders());
   }, [dispatch]);
@@ -60,11 +60,25 @@ export default function Orders() {
   XLSX.writeFile(workbook, "orders.xlsx");
 };
 
+
+const filteredOrders = items.filter((order) => {
+  const term = searchTerm.toLowerCase();
+
+  return (
+    order.id?.toLowerCase().includes(term) ||
+    order.user?.name?.toLowerCase().includes(term) ||
+    order.user?.email?.toLowerCase().includes(term) ||
+    order.user?.phone?.toLowerCase().includes(term) ||
+    order.user?.city?.toLowerCase().includes(term) ||
+    order.status?.toLowerCase().includes(term)
+  );
+});
+
  
  
   return (
     <div className="admin container">
-      <div className="admin__header">
+      {/* <div className="admin__header">
         <h2>Orders</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <button className="btn-main" onClick={exportToExcel}>
@@ -72,7 +86,30 @@ export default function Orders() {
           </button>
           <span className="order-count">{items.length} orders</span>
         </div>
-      </div>
+      </div> */}
+
+      <div className="admin__header">
+  <h2>Orders</h2>
+
+  <div className="admin-actions">
+    <input
+      type="text"
+      placeholder="Search orders..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="admin-search"
+    />
+
+    <button className="btn-main" onClick={exportToExcel}>
+      Export Excel
+    </button>
+
+    <span className="order-count">
+      {filteredOrders.length} orders
+    </span>
+  </div>
+</div>
+
 
 
       <div className="admin__table orders-table">
@@ -96,7 +133,7 @@ export default function Orders() {
         )}
 
         {status === "succeeded" &&
-          items.map((order) => (
+          filteredOrders.map((order) => (
             <div key={order.id} className="table-row">
               <span className="mono">#{order.id.slice(0, 6)}</span>
               <span>{order.user?.name || "N/A"}</span>
@@ -203,6 +240,11 @@ export default function Orders() {
               )}
             </div>
           ))}
+          {status === "succeeded" && filteredOrders.length === 0 && (
+  <div className="table-empty">
+    No orders found.
+  </div>
+)}
       </div>
 
       {/* DELETE CONFIRMATION */}

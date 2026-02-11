@@ -16,6 +16,7 @@ import { uploadToCloudinary } from "../../lib/cloudinary";
 import { LoadingContext } from "../../context/LoadingContext";
 import AdminLayout from "../../components/admin/AdminLayout";
 import * as XLSX from "xlsx";
+import { Loader2 } from "lucide-react";
 export default function AddProduct() {
   const emptyForm = {
     id: null,
@@ -36,17 +37,43 @@ export default function AddProduct() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const { setLoading } = useContext(LoadingContext);
   const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
   const colors = ["white", "red", "blue", "orange", "black"];
   const sizes = ["s", "m", "l", "xl", "xxl"];
 
   // 🔹 FETCH PRODUCTS
-  const fetchProducts = async () => {
-    const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  };
+  // const fetchProducts = async () => {
+  //   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+  //   const snap = await getDocs(q);
+  //   setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  // };
+
+ const fetchProducts = async () => {
+  try {
+    setLoadingProducts(true);
+
+    const snap = await getDocs(collection(db, "products"));
+
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Sort manually instead of Firestore
+    data.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return b.createdAt.seconds - a.createdAt.seconds;
+    });
+
+    setProducts(data);
+  } catch (err) {
+    console.error("Fetch error:", err);
+  } finally {
+    setLoadingProducts(false);
+  }
+};
+
+
 
   useEffect(() => {
     fetchProducts();
@@ -234,20 +261,40 @@ const resizeImage = (file) => {
     }
   };
 
+
+  const filteredProducts = products.filter((p) => {
+  const term = searchTerm.toLowerCase();
+
+  return (
+    p.title?.toLowerCase().includes(term) ||
+    p.slug?.toLowerCase().includes(term)
+  );
+});
+
   return (
     <div className="admin container">
-
       <div className="admin__header">
-        <h2>Products</h2>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button className="btn-main" onClick={exportToExcel}>
-            Export Excel
-          </button>
-          <button className="btn-main" onClick={openAdd}>
-            Add Product
-          </button>
-        </div>
-      </div>
+  <h2>Products</h2>
+
+  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+    <input
+  type="text"
+  placeholder="Search by title or slug..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  className="admin-search"
+/>
+
+    <button className="btn-main" onClick={exportToExcel}>
+      Export Excel
+    </button>
+
+    <button className="btn-main" onClick={openAdd}>
+      Add Product
+    </button>
+  </div>
+</div>
+
 
 
       {/* TABLE */}
@@ -260,20 +307,45 @@ const resizeImage = (file) => {
           <span>Category</span>
           <span>Actions</span>
         </div>
-
-        {products.map(p => (
-          <div className="table-row" key={p.id}>
-            <img src={p.images?.[0] || "/placeholder.png"} alt={p.title} />
-            <span>{p.title}</span>
-            <span>${p.price}</span>
-            <span>{p.stock ?? 0}</span>
-            <span>{p.categorySlug}</span>
-            <span className="actions">
-              <button className="btn-edit" onClick={() => openEdit(p)}>Edit</button>
-              <button className="btn-delete" onClick={() => setDeleteId(p.id)}>Delete</button>
-            </span>
+        {loadingProducts ? (
+          <div className="table-loading">
+            <Loader2 className="spin" size={24} />
+            Loading products...
           </div>
-        ))}
+        ) : filteredProducts.length === 0 ? (
+          <div
+            style={{
+              padding: "20px",
+              textAlign: "center",
+              opacity: 0.6,
+            }}
+          >
+            No products found.
+          </div>
+        ) : (
+          filteredProducts.map((p) => (
+            <div className="table-row" key={p.id}>
+              <img src={p.images?.[0] || "/placeholder.png"} alt={p.title} />
+              <span>{p.title}</span>
+              <span>${p.price}</span>
+              <span>{p.stock ?? 0}</span>
+              <span>{p.categorySlug}</span>
+              <span className="actions">
+                <button className="btn-edit" onClick={() => openEdit(p)}>
+                  Edit
+                </button>
+                <button
+                  className="btn-delete"
+                  onClick={() => setDeleteId(p.id)}
+                >
+                  Delete
+                </button>
+              </span>
+            </div>
+          ))
+        )}
+
+
       </div>
 
       {/* DELETE MODAL */}

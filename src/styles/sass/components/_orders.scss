@@ -229,6 +229,48 @@
   color: $txt-second-color;
 }
 
+
+
+
+.admin-search {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-width: 260px;
+  font-size: 14px;
+  color: $txt-main-color;
+  background-color: $main-bg;
+  transition: all 0.25s ease;
+  outline: none;
+
+  &::placeholder {
+    color: $txt-second-color;
+  }
+
+  &:focus {
+    border-color: $main-color;
+    box-shadow: 0 0 0 3px rgba($main-color, 0.15);
+  }
+
+  @include mobile {
+    min-width: 100%;
+  }
+}
+
+.admin-actions {
+  @include flex(center, flex-end);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.table-empty {
+  padding: 20px;
+  text-align: center;
+  opacity: 0.6;
+}
+
+
+
 @keyframes modalIn {
   from {
     opacity: 0;

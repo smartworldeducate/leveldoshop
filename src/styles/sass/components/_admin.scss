@@ -427,6 +427,59 @@
 }
 
 
+/* ======================
+   ADMIN SEARCH INPUT
+====================== */
+
+.admin-search {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-width: 260px;
+  font-size: 14px;
+  color: $txt-main-color;
+  background-color: $main-bg;
+  transition: all 0.25s ease;
+  outline: none;
+
+  &::placeholder {
+    color: $txt-second-color;
+    font-size: 13px;
+  }
+
+  &:hover {
+    border-color: lighten($main-color, 15%);
+  }
+
+  &:focus {
+    border-color: $main-color;
+    box-shadow: 0 0 0 3px rgba($main-color, 0.15);
+  }
+
+  @include mobile {
+    min-width: 100%;
+  }
+}
+
+/* Optional: If inside header for better alignment */
+.admin__header {
+  @include flex(center, space-between);
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .admin-actions {
+    @include flex(center, flex-end);
+    gap: 10px;
+    flex-wrap: wrap;
+
+    @include mobile {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+
 /* ================= ANIMATION ================= */
 @keyframes modalIn {
   from {
