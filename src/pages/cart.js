@@ -116,8 +116,7 @@ export default function Cart() {
         totalPrice,
         createdAt: serverTimestamp()
       })
-
-      setSuccessMessage('Your order has been placed successfully!')
+      setSuccessMessage('Your order has been placed successfully! 🎉')
       setShowModal(false)
     } catch (error) {
       console.error('Order error:', error)
@@ -134,7 +133,11 @@ export default function Cart() {
         <title>Shop</title>
         <meta name="description" content="Your shopping cart" />
       </Head>
-
+      {successMessage && (
+  <div className="order-success">
+    <span>✅ {successMessage}</span>
+  </div>
+)}
       <div className="cart">
         <div className="cart__info">
           <div className="cart__info__txt">

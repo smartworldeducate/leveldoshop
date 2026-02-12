@@ -120,6 +120,31 @@
     }
 }
 
+.order-success {
+  width: 100%;
+  background: #e6f9f0;
+  border: 1px solid #2ecc71;
+  color: #27ae60;
+  padding: 14px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 600;
+  animation: slideDown 0.4s ease;
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
 /* =========================
    Cart Modal
 ========================= */

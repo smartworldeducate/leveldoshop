@@ -194,10 +194,10 @@ const [open, setOpen] = useState(false);
                 }}
                 onClick={() => {
                   setOpen(false);
-                  router.push("/");
+                  router.push("/admin/orders");
                 }}
               >
-                Profile
+                Admin
               </div>
 
               <div
