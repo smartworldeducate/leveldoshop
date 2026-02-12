@@ -30,6 +30,7 @@ export default function AddProduct() {
     images: [],
     files: [],
     slug: "",
+    awslink: "",
   };
 
   const [products, setProducts] = useState([]);
@@ -200,6 +201,7 @@ const resizeImage = (file) => {
         description: form.description,
         images: imageUrls,
         slug: slugify(form.title, { lower: true }),
+         awslink: form.awslink,
       };
 
       if (isEdit) {
@@ -383,6 +385,16 @@ const resizeImage = (file) => {
                   <div className="field"><label>Price</label><input type="number" name="price" value={form.price} onChange={handleChange} required /></div>
                   <div className="field"><label>Stock</label><input type="number" name="stock" value={form.stock} onChange={handleChange} required min={0} /></div>
                   <div className="field"><label>Category</label><input name="categorySlug" value={form.categorySlug} onChange={handleChange} required /></div>
+                  <div className="field">
+                    <label>Amazon Link</label>
+                    <input
+                      type="url"
+                      name="awslink"
+                      value={form.awslink}
+                      onChange={handleChange}
+                      placeholder="https://www.amazon.com/..."
+                    />
+                  </div>
                   <div className="field full"><label>Description</label><textarea name="description" value={form.description} onChange={handleChange} /></div>
 
                   {/* Colors & Sizes */}

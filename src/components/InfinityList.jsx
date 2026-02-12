@@ -64,6 +64,7 @@ const InfinityList = ({ data: initialData }) => {
             name={item.title}
             price={Number(item.price)}
             slug={item.slug}
+            awslink={item?.awslink}
           />
         ))}
       </Grid>

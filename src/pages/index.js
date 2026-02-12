@@ -20,7 +20,6 @@ import { fetchProducts } from '../redux/products/productsSlice'
 export default function Home() {
   const dispatch = useDispatch()
   const products = useSelector(state => state.products.items)
-
   const [bestSelling, setBestSelling] = useState([])
   const [newProducts, setNewProducts] = useState([])
   const [popularProducts, setPopularProducts] = useState([])
@@ -99,6 +98,7 @@ export default function Home() {
                 name={item.title}
                 price={Number(item.price)}
                 slug={item.slug}
+                awslink={item?.awslink}
               />
             ))}
           </Grid>
@@ -119,6 +119,7 @@ export default function Home() {
                 price={Number(item.price)}
                 slug={item.slug}
                 stock={item.stock}
+                awslink={item?.awslink}
               />
             ))}
           </Grid>
@@ -157,6 +158,7 @@ export default function Home() {
                 name={item.title}
                 price={Number(item.price)}
                 slug={item.slug}
+                awslink={item?.awslink}
               />
             ))}
           </Grid>

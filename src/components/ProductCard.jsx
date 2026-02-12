@@ -9,9 +9,9 @@ import { set } from '../redux/product-modal/productModalSlice'
 import Button from './Button'
 import numberWithCommas from '../utils/numberWithCommas'
 
-const ProductCard = ({ img01, img02, name, price, slug }) => {
+const ProductCard = ({ img01, img02, name, price, slug,awslink }) => {
   const dispatch = useDispatch()
-
+  console.log("awslink==",awslink);
   return (
     <div className="product-card">
       {/* Remove <a> and use Link directly */}
@@ -24,10 +24,21 @@ const ProductCard = ({ img01, img02, name, price, slug }) => {
         <div className="product-card__price">
           {numberWithCommas(price)}
           <span className="product-card__price__old">
-            <del>{numberWithCommas(399000)}</del>
+            <del>{numberWithCommas(399000)}</del>  
           </span>
         </div>
       </Link>
+      {awslink && (
+        <a
+          href={awslink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-main amazon-btn"
+        
+        >
+          Buy on Amazon
+        </a>
+      )}
 
       <div className="product-card__btn">
         <Button
@@ -48,7 +59,8 @@ ProductCard.propTypes = {
   img02: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   price: PropTypes.number.isRequired,
-  slug: PropTypes.string.isRequired
+  slug: PropTypes.string.isRequired,
+  awslink: PropTypes.string
 }
 
 export default ProductCard

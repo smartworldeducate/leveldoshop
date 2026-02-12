@@ -62,4 +62,15 @@
             // display: none;
         }
     }
+
+    .amazon-btn {
+    display: inline-block;
+    color: #8d8d8d;
+    padding-bottom:20px; 
+
+    &:hover {
+    color: #4267b2;
+  }
+    
+    }
 }
