@@ -1,38 +1,56 @@
-import { signInWithPopup } from "firebase/auth";
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebaseClient";
 import { useRouter } from "next/router";
 import { useState } from "react";
-
+import google2 from '../assets/images/google2.png'
+import Image from "next/image";
 export default function Login() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  // ✅ Define admin emails
   const adminEmails = ["salmanalisoftwareenginear@gmail.com"];
 
+  // 🔵 Google Login
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      console.log("Logged-in user:", user);
-
-      // ✅ Redirect based on role
-      if (adminEmails.includes(user.email)) {
-        router.push("/admin/orders");
-      } else {
-        router.push("/"); // customer dashboard/profile page
-      }
-
-      // Optional: you can also save users to Firestore here if needed
-
+      redirectUser(result.user);
     } catch (err) {
-      console.error("Login error:", err);
-      alert("Login failed");
+      alert("Google login failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🔐 Email Password Login
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      redirectUser(result.user);
+    } catch (err) {
+      alert("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const redirectUser = (user) => {
+    if (adminEmails.includes(user.email)) {
+      router.push("/admin/orders");
+    } else {
+      router.push("/");
     }
   };
 
@@ -41,17 +59,57 @@ export default function Login() {
       <div className="login-wrapper">
         <div className="login-card">
           <div className="login-header">
-            <h1>Sign In / Sign Up</h1>
-            <p>Use your Google account to continue</p>
+            <Image
+              src={google2}
+              alt="Google"
+               width={45}          // 👈 control width
+               height={45}
+              className="google-logo"
+            />
+            <h1>Sign in</h1>
+            <p>Continue with your account</p>
           </div>
 
           <div className="login-body">
+            {/* Email Login */}
+            <form onSubmit={handleEmailLogin} className="login-form">
+              <div className="form-group">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" disabled={loading} className="primary-btn">
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+
+            <div className="divider">
+              <span>OR</span>
+            </div>
+
+            {/* Google Login */}
             <button
               className="google-btn"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign in with Google"}
+              <Image src={google2} alt="Google" className="google-logo" />
+              Continue with Google
             </button>
           </div>
         </div>
@@ -59,6 +117,5 @@ export default function Login() {
     </div>
   );
 }
-Login.getLayout = function getLayout(page) {
-  return page;
-};
+
+Login.getLayout = (page) => page;

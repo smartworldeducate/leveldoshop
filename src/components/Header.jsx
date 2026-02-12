@@ -1,12 +1,13 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSelector } from 'react-redux'
-
+import { useAuth } from "../context/AuthContext";
 import logo from '../assets/images/Logo-2.png'
 import { useRouter } from 'next/router'
-
+import { signOut } from "firebase/auth";
+import { auth } from "../lib/firebaseClient";
 const mainNav = [
   { display: 'Home', path: '/' },
   { display: 'Products', path: '/catalog' },
@@ -16,6 +17,8 @@ const mainNav = [
 
 export default function Header() {
   const router = useRouter()
+  const { user } = useAuth();
+const [open, setOpen] = useState(false);
   const cartItems = useSelector((state) => state.cartItems.value)
   const pathname = usePathname()
   const activeNav = mainNav.findIndex((e) => e.path === pathname)
@@ -37,6 +40,17 @@ export default function Header() {
   }, [])
 
   const menuToggle = () => menuLeft.current.classList.toggle('active')
+
+
+  const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    router.push("/");
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
+
 
   return (
     <div className="header" ref={headerRef}>
@@ -120,11 +134,95 @@ export default function Header() {
 
   {/* User Icon */}
   <div className="header__menu__item header__menu__right__item">
-    <i
-      className="bx bx-user text-2xl"
-      style={{ cursor: "pointer" }}
-      onClick={() => router.push("/login")} // 🔹 Open login page
-    ></i>
+      {/* User Section */}
+    <div className="header__menu__item header__menu__right__item">
+      {user ? (
+        <div style={{ position: "relative" }}>
+          <div
+            onClick={() => setOpen(!open)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+            }}
+          >
+            {user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="User"
+                style={{
+                  width: "25px",
+                  height: "25px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <i className="bx bx-user-circle" style={{ fontSize: "24px" }}></i>
+            )}
+            <span
+              style={{
+                fontWeight: 500,
+                fontSize: "15px",   // 👈 reduced
+              }}
+            >
+              {user.displayName}
+            </span>
+          </div>
+
+          {open && (
+            <div
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "45px",
+                background: "#fff",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+                borderRadius: "8px",
+                padding: "10px",
+                minWidth: "150px",
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  padding: "8px 10px",
+                  cursor: "pointer",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                }}
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/");
+                }}
+              >
+                Profile
+              </div>
+
+              <div
+                style={{
+                  padding: "8px 10px",
+                  cursor: "pointer",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  color: "#f44336",
+                }}
+                onClick={handleLogout}
+              >
+                Logout
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <i
+          className="bx bx-user text-2xl"
+          style={{ cursor: "pointer" }}
+          onClick={() => router.push("/login")}
+        ></i>
+      )}
+    </div>
   </div>
 </div>
 
