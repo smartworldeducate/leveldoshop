@@ -6,17 +6,17 @@ import Grid from './Grid'
 import logo from '../assets/images/Logo-2.png'
 
 const footerAboutLinks = [
-  { display: "About Us", path: "/about" },
-  { display: "Contact", path: "/about" },
-  { display: "Careers", path: "/about" },
-  { display: "News", path: "/about" },
-  { display: "Store Locations", path: "/about" }
+  { display: "About Us", path: "/policy" },
+  { display: "Contact", path: "/policy" },
+  { display: "Careers", path: "/policy" },
+  { display: "News", path: "/policy" },
+  { display: "Store Locations", path: "/policy" }
 ]
 
 const footerCustomerLinks = [
-  { display: "Return Policy", path: "/about" },
-  { display: "Warranty Policy", path: "/about" },
-  { display: "Refund Policy", path: "/about" }
+  { display: "Return Policy", path: "/policy" },
+  { display: "Warranty Policy", path: "/policy" },
+  { display: "Refund Policy", path: "/policy" }
 ]
 
 export default function Footer() {
