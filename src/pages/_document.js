@@ -8,7 +8,6 @@ class MyDocument extends Document {
         <Head>
           <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6218367996393783"
      crossorigin="anonymous"></script>
-          {/* You can put global <link> or <meta> tags here */}
         </Head>
         <body>
           <Main /> {/* This renders your app */}
