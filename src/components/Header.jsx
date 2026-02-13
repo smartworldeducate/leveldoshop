@@ -12,7 +12,8 @@ const mainNav = [
   { display: 'Home', path: '/' },
   { display: 'Products', path: '/catalog' },
   { display: 'Accessories', path: '/accessories' },
-  { display: 'Contact', path: '/contact' }
+  { display: 'Contact', path: '/contact' },
+  { display: 'Post', path: '/posts' }
 ]
 
 export default function Header() {
