@@ -1,37 +1,16 @@
-import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../lib/firebaseClient";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import { fetchPosts } from "../../redux/posts/postsSlice"; // Redux actions
 
 export default function Posts() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const posts = useSelector((state) => state.posts.items);
+  const loading = useSelector((state) => state.posts.loading);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const snap = await getDocs(collection(db, "posts"));
-        const data = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
-
-        data.sort((a, b) => {
-          const aTime = a.createdAt?.seconds || 0;
-          const bTime = b.createdAt?.seconds || 0;
-          return bTime - aTime;
-        });
-
-        setPosts(data);
-      } catch (err) {
-        console.error("Error fetching posts:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
+    dispatch(fetchPosts());
+  }, [dispatch]);
 
   return (
     <div className="posts container">
@@ -51,19 +30,14 @@ export default function Posts() {
           {posts.map((p) => (
             <Link key={p.id} href={`/posts/${p.slug}`} className="posts__card">
               <div className="posts__image">
-                <img
-                  src={p.images?.[0] || "/placeholder.png"}
-                  alt={p.title}
-                />
+                <img src={p.images?.[0] || "/placeholder.png"} alt={p.title} />
               </div>
 
               <div className="posts__content">
                 <div className="posts__meta">
                   <span>
                     {p.createdAt?.seconds
-                      ? new Date(
-                          p.createdAt.seconds * 1000
-                        ).toLocaleDateString()
+                      ? new Date(p.createdAt.seconds * 1000).toLocaleDateString()
                       : ""}
                   </span>
                   <span>❤️ {p.likes || 0}</span>

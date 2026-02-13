@@ -1,22 +1,18 @@
 import { useEffect, useState, useContext } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  query,
-  orderBy,
-} from "firebase/firestore";
+  fetchProducts,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+} from "../../redux/products/addProductsSlice";
 import slugify from "slugify";
-import { db } from "../../lib/firebaseClient";
-import { uploadToCloudinary } from "../../lib/cloudinary";
 import { LoadingContext } from "../../context/LoadingContext";
 import AdminLayout from "../../components/admin/AdminLayout";
 import * as XLSX from "xlsx";
 import { Loader2 } from "lucide-react";
+import { uploadToCloudinary } from "../../lib/cloudinary";
+
 export default function AddProduct() {
   const emptyForm = {
     id: null,
@@ -33,271 +29,201 @@ export default function AddProduct() {
     awslink: "",
   };
 
-  const [products, setProducts] = useState([]);
+  const dispatch = useDispatch();
+  const { items: products, loading } = useSelector((state) => state.products);
   const [form, setForm] = useState(emptyForm);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadingProducts, setLoadingProducts] = useState(true);
   const { setLoading } = useContext(LoadingContext);
+
   const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
   const colors = ["white", "red", "blue", "orange", "black"];
   const sizes = ["s", "m", "l", "xl", "xxl"];
 
   // 🔹 FETCH PRODUCTS
-  // const fetchProducts = async () => {
-  //   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-  //   const snap = await getDocs(q);
-  //   setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  // };
-
- const fetchProducts = async () => {
-  try {
-    setLoadingProducts(true);
-
-    const snap = await getDocs(collection(db, "products"));
-
-    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    // Sort manually instead of Firestore
-    data.sort((a, b) => {
-      if (!a.createdAt || !b.createdAt) return 0;
-      return b.createdAt.seconds - a.createdAt.seconds;
-    });
-
-    setProducts(data);
-  } catch (err) {
-    console.error("Fetch error:", err);
-  } finally {
-    setLoadingProducts(false);
-  }
-};
-
-
-
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   // 🔹 FORM HANDLER
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === "checkbox") {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
-        [name]: checked ? [...prev[name], value] : prev[name].filter(v => v !== value),
+        [name]: checked
+          ? [...prev[name], value]
+          : prev[name].filter((v) => v !== value),
       }));
     } else if (type === "file") {
-      setForm(prev => ({ ...prev, files: [...prev.files, ...Array.from(files)] }));
+      setForm((prev) => ({ ...prev, files: [...prev.files, ...Array.from(files)] }));
     } else {
-      setForm(prev => ({ ...prev, [name]: type === "number" ? Number(value) : value }));
+      setForm((prev) => ({ ...prev, [name]: type === "number" ? Number(value) : value }));
     }
   };
 
-  const openAdd = () => { setForm(emptyForm); setIsEdit(false); setModalOpen(true); };
-  const openEdit = (p) => { setForm({ ...p, files: [] }); setIsEdit(true); setModalOpen(true); };
+  const openAdd = () => {
+    setForm(emptyForm);
+    setIsEdit(false);
+    setModalOpen(true);
+  };
+  const openEdit = (p) => {
+    setForm({ ...p, files: [] });
+    setIsEdit(true);
+    setModalOpen(true);
+  };
 
   const removeImage = (index) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
       files: prev.files.filter((_, i) => i !== index),
     }));
   };
 
-const resizeImage = (file) => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const reader = new FileReader();
+  // 🔹 IMAGE RESIZE
+  const resizeImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
 
-    reader.onload = (e) => {
-      img.src = e.target.result;
-    };
+      reader.onload = (e) => (img.src = e.target.result);
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-      let width = img.width;
-      let height = img.height;
+        let width = img.width;
+        let height = img.height;
+        const MAX_DIMENSION = 1600;
 
-      const MAX_DIMENSION = 1600;
-
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        if (width > height) {
-          height = (height * MAX_DIMENSION) / width;
-          width = MAX_DIMENSION;
-        } else {
-          width = (width * MAX_DIMENSION) / height;
-          height = MAX_DIMENSION;
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width > height) {
+            height = (height * MAX_DIMENSION) / width;
+            width = MAX_DIMENSION;
+          } else {
+            width = (width * MAX_DIMENSION) / height;
+            height = MAX_DIMENSION;
+          }
         }
-      }
 
-      canvas.width = width;
-      canvas.height = height;
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
 
-      ctx.drawImage(img, 0, 0, width, height);
-
-      let quality = 0.9;
-
-      const compress = () => {
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return reject("Compression failed");
-
-            if (blob.size <= MAX_IMAGE_SIZE || quality <= 0.4) {
-              resolve(
-                new File([blob], file.name, {
-                  type: file.type, // ✅ keep original type
-                  lastModified: Date.now(),
-                })
-              );
-            } else {
-              quality -= 0.1;
-              compress();
-            }
-          },
-          file.type === "image/png" ? "image/png" : "image/jpeg",
-          quality
-        );
+        let quality = 0.9;
+        const compress = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject("Compression failed");
+              if (blob.size <= MAX_IMAGE_SIZE || quality <= 0.4) {
+                resolve(new File([blob], file.name, { type: file.type, lastModified: Date.now() }));
+              } else {
+                quality -= 0.1;
+                compress();
+              }
+            },
+            file.type === "image/png" ? "image/png" : "image/jpeg",
+            quality
+          );
+        };
+        compress();
       };
 
-      compress();
-    };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
-    img.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
-
-  // 🔹 SUBMIT
   const submit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      let imageUrls = [...form.images];
-
-      if (form.files.length > 0) {
-        const uploaded = await Promise.all(form.files.map(f => uploadToCloudinary(f)));
-        imageUrls = [...imageUrls, ...uploaded];
-      }
-
-      if (imageUrls.length === 0) {
-        alert("At least one image is required");
-        setLoading(false);
-        return;
-      }
-
-      const payload = {
-        title: form.title,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        categorySlug: form.categorySlug,
-        colors: form.colors,
-        size: form.size,
-        description: form.description,
-        images: imageUrls,
-        slug: slugify(form.title, { lower: true }),
-         awslink: form.awslink,
-      };
-
-      if (isEdit) {
-        await updateDoc(doc(db, "products", form.id), payload);
-      } else {
-        await addDoc(collection(db, "products"), { ...payload, createdAt: serverTimestamp() });
-      }
-
-      setModalOpen(false);
-      setForm(emptyForm);
-      fetchProducts();
-    } catch (err) {
-      console.error("Firestore error:", err);
-      alert("Something went wrong!");
-    } finally {
-      setLoading(false);
+  try {
+    if (isEdit) {
+      await dispatch(updateProduct({ id: form.id, form }));
+    } else {
+      await dispatch(addProduct(form));
     }
-  };
 
-  const exportToExcel = () => {
-  if (!products.length) {
-    alert("No products to export");
-    return;
+    // 🔥 VERY IMPORTANT: REFRESH PRODUCTS
+    await dispatch(fetchProducts());
+
+    setModalOpen(false);
+    setForm(emptyForm);
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong!");
+  } finally {
+    setLoading(false);
   }
-
-  // Format data for Excel
-  const formattedData = products.map(p => ({
-    Title: p.title,
-    Price: p.price,
-    Stock: p.stock ?? 0,
-    Category: p.categorySlug,
-    Colors: p.colors?.join(", "),
-    Sizes: p.size?.join(", "),
-    Description: p.description,
-    Images: p.images?.join(", "),
-    Slug: p.slug,
-  }));
-
-  // Create worksheet
-  const worksheet = XLSX.utils.json_to_sheet(formattedData);
-
-  // Create workbook
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-
-  // Download file
-  XLSX.writeFile(workbook, "products.xlsx");
 };
 
 
-  const confirmDelete = async () => {
-    try {
-      await deleteDoc(doc(db, "products", deleteId));
-      setDeleteId(null);
-      fetchProducts();
-    } catch (err) {
-      console.error(err);
-      alert("Delete failed!");
-    }
+  // 🔹 EXPORT TO EXCEL
+  const exportToExcel = () => {
+    if (!products.length) return alert("No products to export");
+
+    const formattedData = products.map((p) => ({
+      Title: p.title,
+      Price: p.price,
+      Stock: p.stock ?? 0,
+      Category: p.categorySlug,
+      Colors: p.colors?.join(", "),
+      Sizes: p.size?.join(", "),
+      Description: p.description,
+      Images: p.images?.join(", "),
+      Slug: p.slug,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+    XLSX.writeFile(workbook, "products.xlsx");
   };
+
+  // 🔹 DELETE
+ const confirmDelete = async () => {
+  if (!deleteId) return;
+
+  try {
+    await dispatch(deleteProduct(deleteId)).unwrap();
+
+    // 🔥 Refresh products to get latest sorted data
+    await dispatch(fetchProducts());
+
+    setDeleteId(null);
+  } catch (err) {
+    console.error("Delete failed:", err);
+    alert("Failed to delete product");
+  }
+};
 
 
   const filteredProducts = products.filter((p) => {
-  const term = searchTerm.toLowerCase();
-
-  return (
-    p.title?.toLowerCase().includes(term) ||
-    p.slug?.toLowerCase().includes(term)
-  );
-});
+    const term = searchTerm.toLowerCase();
+    return p.title?.toLowerCase().includes(term) || p.slug?.toLowerCase().includes(term);
+  });
 
   return (
     <div className="admin container">
+      {/* HEADER */}
       <div className="admin__header">
-  <h2>Products</h2>
-
-  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-    <input
-  type="text"
-  placeholder="Search by title or slug..."
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  className="admin-search"
-/>
-
-    <button className="btn-main" onClick={exportToExcel}>
-      Export Excel
-    </button>
-
-    <button className="btn-main" onClick={openAdd}>
-      Add Product
-    </button>
-  </div>
-</div>
-
-
+        <h2>Products</h2>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="Search by title or slug..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="admin-search"
+          />
+          <button className="btn-main" onClick={exportToExcel}>Export Excel</button>
+          <button className="btn-main" onClick={openAdd}>Add Product</button>
+        </div>
+      </div>
 
       {/* TABLE */}
       <div className="admin__table">
@@ -309,21 +235,13 @@ const resizeImage = (file) => {
           <span>Category</span>
           <span>Actions</span>
         </div>
-        {loadingProducts ? (
+
+        {loading ? (
           <div className="table-loading">
-            <Loader2 className="spin" size={24} />
-            Loading products...
+            <Loader2 className="spin" size={24} /> Loading products...
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div
-            style={{
-              padding: "20px",
-              textAlign: "center",
-              opacity: 0.6,
-            }}
-          >
-            No products found.
-          </div>
+          <div style={{ padding: 20, textAlign: "center", opacity: 0.6 }}>No products found.</div>
         ) : (
           filteredProducts.map((p) => (
             <div className="table-row" key={p.id}>
@@ -333,30 +251,19 @@ const resizeImage = (file) => {
               <span>{p.stock ?? 0}</span>
               <span>{p.categorySlug}</span>
               <span className="actions">
-                <button className="btn-edit" onClick={() => openEdit(p)}>
-                  Edit
-                </button>
-                <button
-                  className="btn-delete"
-                  onClick={() => setDeleteId(p.id)}
-                >
-                  Delete
-                </button>
+                <button className="btn-edit" onClick={() => openEdit(p)}>Edit</button>
+                <button className="btn-delete" onClick={() => setDeleteId(p.id)}>Delete</button>
               </span>
             </div>
           ))
         )}
-
-
       </div>
 
       {/* DELETE MODAL */}
       {deleteId && (
         <div className="admin-modal" onClick={() => setDeleteId(null)}>
           <div className="modal-box small" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header danger">
-              <h3>Delete Product</h3>
-            </div>
+            <div className="modal-header danger"><h3>Delete Product</h3></div>
             <div className="modal-body">
               <p>Are you sure you want to delete this product?<br /><strong>This action cannot be undone.</strong></p>
             </div>
@@ -484,4 +391,4 @@ const resizeImage = (file) => {
   );
 }
 
-AddProduct.getLayout = page => <AdminLayout>{page}</AdminLayout>;
+AddProduct.getLayout = (page) => <AdminLayout>{page}</AdminLayout>;

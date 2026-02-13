@@ -1,37 +1,38 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { collection, getDocs, updateDoc, doc, increment } from "firebase/firestore";
-import { db } from "../../lib/firebaseClient";
 import Head from "next/head";
 import { ArrowLeft } from "lucide-react"; // ← Lucide icon
+import { useSelector, useDispatch } from "react-redux";
+import { fetchPosts, likePost as reduxLikePost } from "../../redux/posts/postsSlice";
 
 export default function SinglePost() {
   const router = useRouter();
   const { slug } = router.query;
+
+  const dispatch = useDispatch();
+  const posts = useSelector((state) => state.posts.items);
+  const loading = useSelector((state) => state.posts.loading);
+
   const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!slug) return;
-    const fetchPost = async () => {
-      try {
-        const snap = await getDocs(collection(db, "posts"));
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const found = data.find(p => p.slug === slug);
-        setPost(found);
-      } catch (err) {
-        console.error("Failed to fetch post:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
-  }, [slug]);
+    // If posts not yet loaded, fetch them
+    if (!posts.length) {
+      dispatch(fetchPosts());
+    }
+  }, [dispatch, posts.length]);
+
+  useEffect(() => {
+    if (!slug || !posts.length) return;
+
+    const found = posts.find((p) => p.slug === slug);
+    setPost(found);
+  }, [slug, posts]);
 
   const likePost = async () => {
     if (!post) return;
     try {
-      await updateDoc(doc(db, "posts", post.id), { likes: increment(1) });
+      await dispatch(reduxLikePost(post.id));
       setPost({ ...post, likes: (post.likes || 0) + 1 });
     } catch (err) {
       console.error("Failed to like post:", err);
@@ -56,7 +57,12 @@ export default function SinglePost() {
 
         <h1>{post.title}</h1>
         <div className="post-meta">
-          <span>Published: {post.createdAt?.toDate().toLocaleDateString()}</span>
+          <span>
+            Published:{" "}
+            {post.createdAt?.seconds
+              ? new Date(post.createdAt.seconds * 1000).toLocaleDateString()
+              : ""}
+          </span>
           <span>{post.likes || 0} ❤️ Likes</span>
         </div>
 
