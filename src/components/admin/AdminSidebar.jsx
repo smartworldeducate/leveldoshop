@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 
 const menu = [
-  { label: "Add Product", path: "/admin/add-product", icon: "bx bx-plus-circle" },
+  { label: "Product", path: "/admin/add-product", icon: "bx bx-plus-circle" },
   { label: "Orders", path: "/admin/orders", icon: "bx bx-receipt" },
   { label: "Posts", path: "/admin/posts", icon: "bx bx-file" },
 ];

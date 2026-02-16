@@ -5,6 +5,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import { LoadingContext } from "../../context/LoadingContext";
 import { uploadToCloudinary } from "../../lib/cloudinary";
 import { fetchPosts, addPost, updatePost, deletePost } from "../../redux/posts/postsSlice";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 export default function AdminPosts() {
   const dispatch = useDispatch();
@@ -194,10 +195,14 @@ export default function AdminPosts() {
 
                   <div className="field full">
                     <label>Post Content</label>
-                    <textarea
+                    {/* <textarea
                       value={form.content}
                       onChange={(e) => setForm({ ...form, content: e.target.value })}
                       required
+                    /> */}
+                    <RichTextEditor
+                      value={form.content}
+                      onChange={(value) => setForm({ ...form, content: value })}
                     />
                   </div>
 

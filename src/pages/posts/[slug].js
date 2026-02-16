@@ -67,7 +67,10 @@ export default function SinglePost() {
         </div>
 
         {post.images?.[0] && <img src={post.images[0]} alt={post.title} />}
-        <p>{post.content}</p>
+        <div
+          className="post-content"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
 
         <button className="like-btn" onClick={likePost}>
           ❤️ Like {post.likes || 0}
