@@ -6,6 +6,7 @@ class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          <meta name="google-adsense-account" content="ca-pub-6218367996393783"></meta>
          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6218367996393783"
      crossorigin="anonymous"></script>
         </Head>
