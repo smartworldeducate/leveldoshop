@@ -19,6 +19,19 @@ const footerCustomerLinks = [
   { display: "Refund Policy", path: "/policy" }
 ]
 
+const downloadApp = () => {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    window.open(
+      "https://drive.google.com/uc?export=download&id=1k4uqapBNANRtaNiAf7F_DGar8CSSAnlw",
+      "_blank"
+    );
+  } else {
+    alert("App is only available for Android devices");
+  }
+};
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -74,6 +87,20 @@ export default function Footer() {
             <p>
               Our goal is to bring fresh fashion joy every day to millions of consumers. Join Yolo in embracing a more dynamic and positive lifestyle.
             </p>
+            <button
+              onClick={downloadApp}
+              style={{
+                backgroundColor:'#4267b2',
+                color: "#fff",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              Get App
+            </button>
           </div>
         </Grid>
       </div>
