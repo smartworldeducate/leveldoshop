@@ -1,138 +1,487 @@
-.header {
-    background-color: $main-bg;
-    position: fixed;
+/* =========================================================
+   SITE HEADER — dense grocery market.
+   Row 1: wordmark · search · links · account · basket
+   Row 2: sticky aisle chips
+   Sticky (not fixed) so the two rows can change height
+   without `.main` having to compensate.
+========================================================= */
+
+.site-header {
+    position: sticky;
     top: 0;
-    left: 0;
-    width: 100%;
     z-index: 99;
-    height: $header-height;
-    transition: height 0.3s ease;
 
-    @include tablet {
-        height: $header-tablet-height;
-        box-shadow: $box-shadow;
+    &__bar {
+        background-color: rgba(#fff, 0.92);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba($main-color, 0.08);
     }
 
-    @include mobile {
-        height: $header-mobile-height;
-    }
+    &__inner {
+        @include flex(center, flex-start);
+        gap: 18px;
+        height: 76px;
 
-    .container {
-        height: 100%;
-    }
-
-    &.shrink {
-        height: $header-shrink-height;
-        box-shadow: $box-shadow;
-        z-index: 100;
+        @include tablet {
+            height: 64px;
+            gap: 12px;
+        }
 
         @include mobile {
-            height: $header-mobile-height;
+            height: 58px;
+            gap: 8px;
         }
     }
 
-    &__logo {
+    /* ---------- mobile menu button ---------- */
+    &__burger {
+        display: none;
+        border: 0;
+        background: none;
+        color: $txt-main-color;
+        font-size: 1.9rem;
+        line-height: 1;
+        cursor: pointer;
+
+        @include tablet {
+            @include flex(center, center);
+        }
+    }
+
+    /* ---------- nav links ---------- */
+    &__links {
         @include flex(center, center);
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
+        gap: 4px;
+        flex-shrink: 0;
 
-        img {
-            height: 28px;
+        a {
+            padding: 9px 14px;
+            border-radius: $radius-pill;
+            color: $txt-main-color;
+            font-size: 0.92rem;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background 0.2s ease, color 0.2s ease;
+
+            &:hover {
+                background: rgba($main-color, 0.08);
+                color: $main-color;
+            }
+
+            &.is-active {
+                background: rgba($main-color, 0.1);
+                color: $main-color;
+                font-weight: 600;
+            }
+        }
+
+        @include tablet {
+            display: none;
         }
     }
 
-    &__menu {
-        @include flex(center, space-between);
-        height: 100%;
-        font-size: 1.5rem;
+    /* ---------- right cluster ---------- */
+    &__actions {
+        @include flex(center, flex-end);
+        gap: 6px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
 
-        &__item ~ &__item {
-            margin-left: 39px;
+    &__icon {
+        @include flex(center, center);
+        gap: 8px;
+        height: 42px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 14px;
+        background: none;
+        color: $txt-main-color;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+
+        &:hover {
+            background: rgba($main-color, 0.08);
+            color: $main-color;
+        }
+
+        &__label {
+            font-size: 0.86rem;
+            font-weight: 500;
 
             @include tablet {
-                margin-left: 20px;
-            }
-
-            @include mobile {
-                margin-left: 10px;
-            }
-        }
-
-        &__item.active {
-            font-weight: 600;
-            color: $main-color;
-        }
-
-        &__item:hover {
-            color: $main-color;
-        }
-
-        &__left,
-        &__right {
-            @include flex(center, center);
-            height: 100%;
-        }
-
-        &__right {
-            font-size: 2.25rem;
-
-            &__item {
-                @include flex(center, center);
-
-                @include tablet {
-                    margin-left: 10px;
-                }
-            }
-
-            @include mobile {
-                font-size: 1.5rem;
-            }
-        }
-
-        &__left {
-            &__close {
                 display: none;
             }
-
-            @include tablet {
-                flex-direction: column;
-                background-color: $main-bg;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100vh;
-                justify-content: flex-start;
-                padding-top: 30px;
-                transform: translateX(-100%);
-                transition: transform 0.5s ease;
-
-                &.active {
-                    transform: translateX(0);
-                }
-
-                &__item ~ &__item {
-                    margin-left: unset;
-                    margin-top: 20px;
-                }
-
-                &__close {
-                    display: block;
-                    position: absolute;
-                    left: 20px;
-                    font-size: 2.5rem;
-                }
-            }
         }
 
-        &__mobile-toggle {
+        // The magnifier icon is only for small screens; the bar covers desktop.
+        &--search {
             display: none;
 
             @include tablet {
-                display: block;
-                font-size: 2.5rem;
+                @include flex(center, center);
             }
+        }
+    }
+
+    &__avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    &__account {
+        position: relative;
+    }
+
+    &__cart {
+        position: relative;
+        @include flex(center, center);
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: $grad-main;
+        color: #fff;
+        font-size: 1.4rem;
+        box-shadow: 0 12px 24px -14px rgba($shadow-color, 0.9);
+        transition: transform 0.2s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+        }
+
+        &__badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: $radius-pill;
+            background-color: $accent-color;
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 700;
+            line-height: 20px;
+            text-align: center;
+            box-shadow: 0 0 0 2px #fff;
+        }
+    }
+}
+
+/* ---------- wordmark ---------- */
+.brand {
+    @include flex(center, flex-start);
+    gap: 10px;
+    flex-shrink: 0;
+
+    &__mark {
+        @include flex(center, center);
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
+        background: $grad-main;
+        color: #fff;
+        font-size: 1.5rem;
+        box-shadow: 0 12px 24px -14px rgba($shadow-color, 0.9);
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
+
+        strong {
+            color: $txt-main-color;
+            font-size: 1.22rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        small {
+            color: $txt-second-color;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+
+            // Keep the name on small screens, drop only the descriptor.
+            @include mobile {
+                display: none;
+            }
+        }
+
+        @include mobile {
+            strong {
+                font-size: 1.05rem;
+            }
+        }
+    }
+}
+
+/* ---------- header search ---------- */
+.site-search {
+    @include flex(center, flex-start);
+    gap: 10px;
+    flex: 1;
+    max-width: 520px;
+    height: 46px;
+    padding: 0 6px 0 16px;
+    border-radius: $radius-pill;
+    background-color: rgba($main-color, 0.06);
+    border: 1px solid transparent;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    &:focus-within {
+        background-color: #fff;
+        border-color: rgba($main-color, 0.35);
+    }
+
+    > i {
+        color: $txt-second-color;
+        font-size: 1.25rem;
+    }
+
+    input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        background: none;
+        color: $txt-main-color;
+        font-family: inherit;
+        font-size: 0.92rem;
+
+        &::placeholder {
+            color: $txt-second-color;
+        }
+
+        &:focus {
+            outline: none;
+        }
+    }
+
+    button {
+        height: 34px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: $radius-pill;
+        background: $grad-main;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    @include tablet {
+        display: none;
+    }
+}
+
+/* ---------- account dropdown ---------- */
+.account-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 170px;
+    padding: 6px;
+    border-radius: $radius;
+    background-color: #fff;
+    box-shadow: 0 24px 50px -24px rgba($shadow-color, 0.55);
+    z-index: 30;
+
+    a,
+    button {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border: 0;
+        border-radius: 10px;
+        background: none;
+        color: $txt-main-color;
+        font-family: inherit;
+        font-size: 0.86rem;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover {
+            background-color: rgba($main-color, 0.08);
+            color: $main-color;
+        }
+    }
+
+    button {
+        color: $accent-color;
+    }
+}
+
+/* ---------- sticky aisle chips ---------- */
+.aisle-bar {
+    background-color: rgba(#fff, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba($main-color, 0.08);
+    box-shadow: 0 10px 24px -22px rgba($shadow-color, 0.7);
+
+    &__inner {
+        @include flex(center, flex-start);
+        gap: 8px;
+        height: 56px;
+        overflow-x: auto;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        @include mobile {
+            height: 50px;
+        }
+    }
+
+    &__chip {
+        @include flex(center, center);
+        gap: 7px;
+        flex-shrink: 0;
+        height: 36px;
+        padding: 0 14px;
+        border-radius: $radius-pill;
+        background-color: rgba($main-color, 0.05);
+        color: $txt-main-color;
+        font-size: 0.83rem;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+        i {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        &:hover {
+            background-color: rgba($main-color, 0.12);
+            color: $main-color;
+        }
+
+        &.is-active {
+            background: $grad-main;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 10px 20px -12px rgba($shadow-color, 0.9);
+
+            .aisle-bar__dot {
+                background-color: #fff !important;
+            }
+        }
+    }
+
+    // Colour stands in for the icon we no longer show beside aisle names.
+    &__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+}
+
+/* ---------- mobile drawer ---------- */
+.site-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    pointer-events: none;
+    visibility: hidden;
+
+    &.is-open {
+        pointer-events: auto;
+        visibility: visible;
+
+        .site-drawer__scrim {
+            opacity: 1;
+        }
+
+        .site-drawer__panel {
+            transform: translateX(0);
+        }
+    }
+
+    &__scrim {
+        position: absolute;
+        inset: 0;
+        background-color: rgba($txt-main-color, 0.45);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    &__panel {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 84%;
+        max-width: 330px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 0 26px 26px 0;
+        overflow-y: auto;
+        transform: translateX(-102%);
+        transition: transform 0.32s ease;
+    }
+
+    &__head {
+        @include flex(center, space-between);
+        margin-bottom: 22px;
+
+        .brand__text {
+            display: flex;
+        }
+
+        button {
+            border: 0;
+            background: none;
+            color: $txt-second-color;
+            font-size: 1.9rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+    }
+
+    &__nav a {
+        display: block;
+        padding: 11px 14px;
+        border-radius: 12px;
+        color: $txt-main-color;
+        font-size: 1rem;
+        font-weight: 500;
+
+        &.is-active {
+            background: rgba($main-color, 0.1);
+            color: $main-color;
+            font-weight: 600;
+        }
+    }
+
+    &__label {
+        margin: 22px 0 8px;
+        padding: 0 14px;
+        color: $txt-second-color;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    &__aisles a {
+        @include flex(center, flex-start);
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        color: $txt-main-color;
+        font-size: 0.92rem;
+
+        &:hover {
+            background-color: rgba($main-color, 0.07);
         }
     }
 }

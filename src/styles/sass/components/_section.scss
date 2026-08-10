@@ -1,13 +1,52 @@
 .section {
-    margin-bottom: 80px;
+    margin-bottom: 96px;
 
     & > * ~ * {
-        margin-top: 70px;
+        margin-top: 44px;
+    }
+
+    @include tablet {
+        margin-bottom: 72px;
+
+        & > * ~ * {
+            margin-top: 34px;
+        }
+    }
+
+    @include mobile {
+        margin-bottom: 56px;
+
+        & > * ~ * {
+            margin-top: 26px;
+        }
     }
 
     &__title {
-        font-size: 2rem;
+        position: relative;
+        font-size: 2.1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
         text-transform: capitalize;
         text-align: center;
+        color: $txt-main-color;
+        padding-bottom: 18px;
+
+        // Short gradient rule under the heading — quiet, not decorative noise.
+        &::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 52px;
+            height: 3px;
+            border-radius: $radius-pill;
+            background: $grad-main;
+        }
+
+        @include mobile {
+            font-size: 1.75rem;
+        }
     }
 }

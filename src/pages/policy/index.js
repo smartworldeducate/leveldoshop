@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PageGuard from '../../components/PageGuard'
 import { useRouter } from "next/router";
 import policy from "../../assets/fake-data/policy";
 import PolicyAccordion from "../../components/PolicyAccordion";
@@ -49,4 +50,11 @@ const PolicyPage = () => {
   );
 };
 
-export default PolicyPage;
+// Switched off from the dashboard? Show a notice instead of the page.
+export default function GuardedPolicyPage(props) {
+  return (
+    <PageGuard page="policy" title="Our policies">
+      <PolicyPage {...props} />
+    </PageGuard>
+  )
+}

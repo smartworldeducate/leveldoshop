@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebaseClient";
+import { isAdmin } from "../lib/admins";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import google2 from '../assets/images/google2.png'
@@ -13,7 +14,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const adminEmails = ["salmanalisoftwareenginear@gmail.com"];
 
   // 🔵 Google Login
   const handleGoogleLogin = async () => {
@@ -46,12 +46,11 @@ export default function Login() {
     }
   };
 
+  // Staff land in the back-office; shoppers go back where they came from.
   const redirectUser = (user) => {
-    if (adminEmails.includes(user.email)) {
-      router.push("/admin/orders");
-    } else {
-      router.push("/");
-    }
+    const next = typeof router.query.next === "string" ? router.query.next : null;
+    if (next?.startsWith("/")) return router.push(next);
+    router.push(isAdmin(user) ? "/dashboard" : "/");
   };
 
   return (

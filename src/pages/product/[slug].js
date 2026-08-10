@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import Section, { SectionBody, SectionTitle } from '../../components/Section'
+import Section, { SectionBody } from '../../components/Section'
+import SectionHead from '../../components/SectionHead'
 import Grid from '../../components/Grid'
 import ProductCard from '../../components/ProductCard'
 import ProductView from '../../components/ProductView'
@@ -59,23 +60,19 @@ export default function Product() {
         </SectionBody>
       </Section>
 
-      <Section>
-        <SectionTitle>Discover more</SectionTitle>
-        <SectionBody>
-          <Grid col={4} mdCol={2} smCol={1} gap={20}>
-            {relatedProducts.map((item, index) => (
-              <ProductCard
-                key={index}
-                img01={item.images[0]}
-                img02={item.images[1] || item.images[0]}
-                name={item.title}
-                price={Number(item.price)}
-                slug={item.slug}
-              />
+      {relatedProducts.length > 0 && (
+        <section className="home-block">
+          <SectionHead
+            title="More from this aisle"
+            href={`/catalog?category=${product.categorySlug}`}
+          />
+          <Grid col={5} mdCol={3} smCol={2} gap={20}>
+            {relatedProducts.map((item) => (
+              <ProductCard key={item.id || item.slug} product={item} />
             ))}
           </Grid>
-        </SectionBody>
-      </Section>
+        </section>
+      )}
     </>
   )
 }

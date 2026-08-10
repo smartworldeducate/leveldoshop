@@ -1,39 +1,100 @@
+/* =========================================================
+   FILTER CHECKBOX — full-row hit target, brand-blue tick,
+   optional count on the right.
+========================================================= */
+
 .custom-checkbox {
     @include flex(center, flex-start);
-
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    margin: 0 -10px;
+    border-radius: 11px;
+    color: $txt-main-color;
+    font-size: 0.87rem;
+    line-height: 1.35;
     cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+
+    & ~ .custom-checkbox {
+        margin-top: 2px;
+    }
 
     &:hover {
-        color: $main-color;
+        background-color: rgba($main-color, 0.06);
     }
 
     input {
         position: absolute;
+        width: 1px;
+        height: 1px;
         opacity: 0;
-        cursor: pointer;
-        height: 0;
-        width: 0;
+        pointer-events: none;
     }
 
-    &__checkmark {
-        margin-right: 10px;
-        height: 15px;
-        width: 15px;
-        border: 1px solid $txt-second-color;
+    &__box {
+        @include flex(center, center);
+        flex-shrink: 0;
+        width: 19px;
+        height: 19px;
+        border: 1.5px solid rgba($txt-second-color, 0.55);
+        border-radius: 6px;
+        background-color: #fff;
+        color: #fff;
+        font-size: 0.95rem;
+        transition: background 0.18s ease, border-color 0.18s ease;
 
         i {
             transform: scale(0);
-            transition: transform 0.3s ease;
+            transition: transform 0.18s ease;
         }
     }
 
-    input:checked ~ &__checkmark {
-        background-color: $main-color;
-        border: 1px solid $main-color;
-        color: $txt-white;
+    &__label {
+        flex: 1;
+        min-width: 0;
     }
 
-    input:checked ~ &__checkmark > i {
-        transform: scale(1);
+    &__count {
+        flex-shrink: 0;
+        min-width: 24px;
+        padding: 2px 7px;
+        border-radius: $radius-pill;
+        background-color: rgba($main-color, 0.08);
+        color: $txt-second-color;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* checked */
+    input:checked ~ .custom-checkbox__box {
+        background: $grad-main;
+        border-color: $main-color;
+
+        i {
+            transform: scale(1);
+        }
+    }
+
+    input:checked ~ .custom-checkbox__label {
+        color: $main-color;
+        font-weight: 600;
+    }
+
+    input:checked ~ .custom-checkbox__count {
+        background-color: rgba($main-color, 0.14);
+        color: $main-color;
+    }
+
+    /* keyboard focus — the input is visually hidden, so ring the box */
+    input:focus-visible ~ .custom-checkbox__box {
+        outline: 2px solid rgba($main-color, 0.45);
+        outline-offset: 2px;
+    }
+
+    &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 }

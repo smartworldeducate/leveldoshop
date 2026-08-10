@@ -1,56 +1,131 @@
+/* =========================================================
+   BUTTONS — one scale for the whole storefront.
+   Metrics are px (not rem) so they don't drift with the
+   13px root font-size, and every size shares the same
+   weight, tracking and radius family.
+========================================================= */
+
 .btn {
-    border: 0;
-    outline: 0;
-    color: $btn-main-color;
-    font-size: 1.5rem;
+    // Size tokens — overridden by .btn-sm / .btn-lg below.
+    --btn-font: 14px;
+    --btn-pad-y: 12px;
+    --btn-pad-x: 24px;
+    --btn-radius: 12px;
+    --btn-bg: #{$main-color};
+    --btn-bg-hover: #{$main-dark};
+    --btn-fg: #fff;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: var(--btn-font);
     font-weight: 600;
-    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    padding: var(--btn-pad-y) var(--btn-pad-x);
+    border: 1px solid transparent;
+    border-radius: var(--btn-radius);
+    background-color: var(--btn-bg);
+    color: var(--btn-fg);
     cursor: pointer;
-    overflow: hidden;
-    position: relative;
+    outline: 0;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+        color 0.2s ease, box-shadow 0.2s ease;
 
-    @include mobile {
-        font-size: 1rem;
+    &:hover {
+        background-color: var(--btn-bg-hover);
     }
 
-    &__txt,
-    &__icon {
-        display: block;
-        transition: transform 0.5s ease;
+    &:active {
+        transform: translateY(1px);
     }
 
-    &__txt {
-        padding: 1rem 2rem;
+    &:focus-visible {
+        box-shadow: 0 0 0 3px rgba($main-color, 0.28);
     }
 
-    &__icon {
-        @include flex(center, center);
-        font-size: 2rem;
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 100%;
-        transform: translateX(-100%);
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
     }
 
-    &-animate:hover &__txt {
-        transform: translateX(100%);
-    }
-
-    &-animate:hover &__icon {
-        transform: translateX(0);
-    }
-
+    /* ---------- sizes ---------- */
     &-sm {
-        font-size: 1rem;
+        --btn-font: 13px;
+        --btn-pad-y: 9px;
+        --btn-pad-x: 16px;
+        --btn-radius: 10px;
     }
 
-    &-sm &__txt {
-        padding: 0.7rem 1.5rem;
+    &-lg {
+        --btn-font: 15px;
+        --btn-pad-y: 15px;
+        --btn-pad-x: 30px;
+        --btn-radius: 14px;
     }
 
     &-block {
         width: 100%;
+    }
+
+    /* ---------- content ---------- */
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        font-size: 1.2em;
+    }
+
+    &__txt {
+        display: inline-block;
+    }
+}
+
+/* ---------- colour variants ----------
+   Two classes deep so they win over the `.bg-*` utilities
+   generated in _base.scss. */
+.btn.bg-main,
+.btn.bg-blue {
+    --btn-bg: #{$main-color};
+    --btn-bg-hover: #{$main-dark};
+}
+
+.btn.bg-pink,
+.btn.bg-red {
+    --btn-bg: #{$accent-color};
+    --btn-bg-hover: #e83358;
+}
+
+.btn.bg-orange {
+    --btn-bg: #f59e0b;
+    --btn-bg-hover: #d98a06;
+}
+
+.btn.bg-black {
+    --btn-bg: #{$txt-main-color};
+    --btn-bg-hover: #000;
+}
+
+/* Light fill for dark backgrounds (hero slider, footer). */
+.btn.bg-white {
+    --btn-bg: #fff;
+    --btn-bg-hover: #{$main-soft};
+    --btn-fg: #{$main-color};
+}
+
+/* Secondary: outlined, for cancel / low-emphasis actions. */
+.btn.btn-outline {
+    --btn-bg: #fff;
+    --btn-bg-hover: #{rgba($main-color, 0.06)};
+    --btn-fg: #{$txt-main-color};
+    border-color: $main-soft;
+
+    &:hover {
+        border-color: rgba($main-color, 0.45);
+        color: $main-color;
     }
 }

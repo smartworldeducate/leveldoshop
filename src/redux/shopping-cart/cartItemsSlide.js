@@ -1,132 +1,91 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-// ✅ Initial state is empty to avoid SSR issues
+// Groceries have no variants, so a cart line is identified by its product
+// slug alone — adding the same item twice bumps the quantity.
 const initialState = {
   value: []
+}
+
+const persist = (items) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('cartItems', JSON.stringify(items))
+  }
 }
 
 export const cartItemsSlice = createSlice({
   name: 'cartItems',
   initialState,
   reducers: {
-    // Add item to cart
     addItem: (state, action) => {
       const newItem = action.payload
+      const existing = state.value.find(e => e.slug === newItem.slug)
 
-      // Check if the same item (slug + color + size) exists
-      const duplicate = state.value.filter(
-        e => e.slug === newItem.slug && e.color === newItem.color && e.size === newItem.size
-      )
-
-      if (duplicate.length > 0) {
-        // Remove old duplicate
-        state.value = state.value.filter(
-          e => e.slug !== newItem.slug || e.color !== newItem.color || e.size !== newItem.size
-        )
-
-        // Add updated quantity
-        state.value = [
-          ...state.value,
-          {
-            id: duplicate[0].id,
-            slug: newItem.slug,
-            color: newItem.color,
-            size: newItem.size,
-            price: newItem.price,
-            quantity: newItem.quantity + duplicate[0].quantity
-          }
-        ]
+      if (existing) {
+        existing.quantity += Number(newItem.quantity) || 1
+        existing.price = Number(newItem.price) || existing.price
       } else {
-        // Add as new item
-        state.value = [
-          ...state.value,
-          {
-            ...newItem,
-            id: state.value.length > 0 ? state.value[state.value.length - 1].id + 1 : 1
-          }
-        ]
+        state.value.push({
+          id: state.value.length ? state.value[state.value.length - 1].id + 1 : 1,
+          slug: newItem.slug,
+          price: Number(newItem.price) || 0,
+          quantity: Number(newItem.quantity) || 1
+        })
       }
 
-      // Update localStorage only on the client
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          'cartItems',
-          JSON.stringify(
-            state.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0))
-          )
-        )
-      }
+      persist(state.value)
     },
 
-    // Update existing item
     updateItem: (state, action) => {
       const newItem = action.payload
+      const item = state.value.find(e => e.slug === newItem.slug)
 
-      const item = state.value.filter(
-        e => e.slug === newItem.slug && e.color === newItem.color && e.size === newItem.size
-      )
-
-      if (item.length > 0) {
-        state.value = state.value.filter(
-          e => e.slug !== newItem.slug || e.color !== newItem.color || e.size !== newItem.size
-        )
-
-        state.value = [
-          ...state.value,
-          {
-            id: item[0].id,
-            slug: newItem.slug,
-            color: newItem.color,
-            size: newItem.size,
-            price: newItem.price,
-            quantity: newItem.quantity
-          }
-        ]
+      if (item) {
+        item.quantity = Math.max(1, Number(newItem.quantity) || 1)
+        item.price = Number(newItem.price) || item.price
       }
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          'cartItems',
-          JSON.stringify(
-            state.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0))
-          )
-        )
-      }
+      persist(state.value)
     },
 
-    // Remove item from cart
     removeItem: (state, action) => {
-      const item = action.payload
-      state.value = state.value.filter(
-        e => e.slug !== item.slug || e.color !== item.color || e.size !== item.size
-      )
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          'cartItems',
-          JSON.stringify(
-            state.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0))
-          )
-        )
-      }
+      state.value = state.value.filter(e => e.slug !== action.payload.slug)
+      persist(state.value)
     },
 
-    // Hydrate cart from localStorage (client-side only)
+    clearCart: (state) => {
+      state.value = []
+      persist(state.value)
+    },
+
+    // Hydrate from localStorage (client-side only)
     hydrate: (state) => {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('cartItems')
-        if (stored) {
-          try {
-            state.value = JSON.parse(stored)
-          } catch {
-            state.value = []
+      if (typeof window === 'undefined') return
+      const stored = localStorage.getItem('cartItems')
+      if (!stored) return
+      try {
+        const parsed = JSON.parse(stored)
+        // Baskets saved before the grocery change carried colour/size keys and
+        // could hold the same slug twice — merge those lines on the way in.
+        state.value = parsed.reduce((acc, item) => {
+          const existing = acc.find(e => e.slug === item.slug)
+          if (existing) {
+            existing.quantity += Number(item.quantity) || 1
+          } else {
+            acc.push({
+              id: acc.length + 1,
+              slug: item.slug,
+              price: Number(item.price) || 0,
+              quantity: Number(item.quantity) || 1
+            })
           }
-        }
+          return acc
+        }, [])
+      } catch {
+        state.value = []
       }
     }
   }
 })
 
-// Export actions and reducer
-export const { addItem, removeItem, updateItem, hydrate } = cartItemsSlice.actions
+export const { addItem, removeItem, updateItem, clearCart, hydrate } = cartItemsSlice.actions
 export default cartItemsSlice.reducer

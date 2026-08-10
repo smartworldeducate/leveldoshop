@@ -1,0 +1,120 @@
+[
+  {
+    "id": "6GNBaKMmzXTLMUQCaAjF",
+    "price": 500,
+    "awslink": "https://amzn.to/4kvHTQl",
+    "slug": "lady-black-pant",
+    "categorySlug": "women were",
+    "size": [
+      "s",
+      "m",
+      "l",
+      "xl",
+      "xxl"
+    ],
+    "images": [
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769681962/leveldo_folder/n8xpmyrzvecjsyyqommo.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769681962/leveldo_folder/goidom3ir1lgzopvlvb5.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769681962/leveldo_folder/crhfp2ty58gpbgrogirs.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769681962/leveldo_folder/fwpeccc99upt5kjurzrj.jpg"
+    ],
+    "colors": [
+      "black"
+    ],
+    "createdAt": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1769681964,
+      "nanoseconds": 496000000
+    },
+    "title": "Lady black  pant",
+    "stock": 2996,
+    "description": "Black lady pand for four season buy one and get one free"
+  },
+  {
+    "id": "SAEyM6BayJp40PJwllrK",
+    "createdAt": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1770783515,
+      "nanoseconds": 51000000
+    },
+    "description": "this is just added ",
+    "awslink": "https://amzn.to/4kvHTQl",
+    "title": "gfb yes",
+    "stock": 333,
+    "images": [
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1770783513/leveldo_folder/nvkptzdzdwbg9aoraur9.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1770783513/leveldo_folder/qrkaskw3im0p3vcrdih9.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1770783513/leveldo_folder/fyxwcpoqmwikyunj6dbq.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1770783513/leveldo_folder/dw1frgx4y9tjpb4apqtk.jpg"
+    ],
+    "colors": [
+      "orange",
+      "blue",
+      "red"
+    ],
+    "categorySlug": "women ",
+    "slug": "gfb-yes",
+    "price": 555,
+    "size": [
+      "m",
+      "l",
+      "xl"
+    ]
+  },
+  {
+    "id": "u4TdH9XZyKkFx8VmVsUm",
+    "stock": 51,
+    "title": "White t shirt",
+    "awslink": "https://amzn.to/4kvHTQl",
+    "size": [
+      "s",
+      "m",
+      "xl",
+      "l"
+    ],
+    "images": [
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769682284/leveldo_folder/ajsisjtzczplrccawwiw.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769682282/leveldo_folder/vjmjo8juatypsjxfgy6o.jpg"
+    ],
+    "colors": [
+      "white",
+      "blue"
+    ],
+    "slug": "white-t-shirt",
+    "createdAt": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1769682286,
+      "nanoseconds": 280000000
+    },
+    "categorySlug": "women ",
+    "price": 1400,
+    "description": "best for women usage in office and industry"
+  },
+  {
+    "id": "yDLmdAvG40rbETVz0CNx",
+    "awslink": "https://amzn.to/4kvHTQl",
+    "size": [
+      "m",
+      "l",
+      "s"
+    ],
+    "price": 500,
+    "slug": "blue-pant",
+    "createdAt": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1769682182,
+      "nanoseconds": 682000000
+    },
+    "images": [
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769682181/leveldo_folder/fqnllyc12gqa3qujo4bc.jpg",
+      "https://res.cloudinary.com/dejuhbel3/image/upload/v1769682181/leveldo_folder/ici811skcizrzet34gjn.jpg"
+    ],
+    "colors": [
+      "blue"
+    ],
+    "stock": 99,
+    "title": "Blue pant",
+    "categorySlug": "men",
+    "description": "best for men for four season"
+  }
+]

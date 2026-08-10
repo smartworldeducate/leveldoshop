@@ -4,23 +4,22 @@
 
 @import "./components/header";
 @import "./components/footer";
-@import "./components/hero-slider";
 @import "./components/button";
 @import "./components/section";
-@import "./components/policy-card";
+// Storefront layout: hero, section heads, aisles, rails, promo band.
+@import "./components/market";
 @import "./components/product-card";
 @import "./components/catalog";
+// Grocery-specific UI; loaded after the blocks it extends.
+@import "./components/grocery";
 @import "./components/custom-checkbox";
 @import "./components/product";
 @import "./components/product-view-modal";
 @import "./components/cart";
-@import "./components/admin";
-@import "./components/orders";
-@import "./components/sidebar";
+// The admin panel's styles left with it — /dashboard is Tailwind-only.
 @import "./components/contact";
 @import "./components/policy-accordian";
 @import "./components/whatsapp";
 @import "./components/search-modal";
 @import "./components/login";
 @import "./components/posts";
-

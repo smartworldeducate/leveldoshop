@@ -1,0 +1,254 @@
+/* =========================================================
+   GROCERY UI — the pieces the shop needs that a fashion
+   template never did: aisle shortcuts, freshness tags,
+   pack / unit pricing and stock facts.
+   Shares the brand tokens with everything else.
+========================================================= */
+
+/* ---------- tags (organic, sale, sold out) ---------- */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: $radius-pill;
+    background-color: rgba($main-color, 0.1);
+    color: $main-color;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+
+    &--fresh {
+        background-color: rgba(#22c55e, 0.14);
+        color: #15803d;
+    }
+
+    &--sale {
+        background-color: rgba($accent-color, 0.12);
+        color: $accent-color;
+    }
+
+    &--muted {
+        background-color: rgba($txt-second-color, 0.16);
+        color: $txt-second-color;
+    }
+}
+
+/* Product tiles live in _product-card.scss; aisle grids in _market.scss. */
+
+/* Catalog chrome moved to _catalog.scss — one owner per block. */
+
+/* ---------- product page facts ---------- */
+.product {
+    &__info__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+
+    &__info__item__unit {
+        display: block;
+        margin-top: 6px;
+        color: $txt-second-color;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    &__info__item__price--old {
+        margin-left: 10px;
+        color: $txt-second-color;
+        font-size: 0.9rem;
+        font-weight: 400;
+        text-decoration: line-through;
+    }
+
+    &__info__item__subtotal {
+        margin-top: 10px;
+        color: $txt-second-color;
+        font-size: 0.82rem;
+
+        strong {
+            color: $txt-main-color;
+        }
+    }
+
+    &__crumbs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        margin-bottom: 18px;
+        color: $txt-second-color;
+        font-size: 0.82rem;
+
+        a:hover {
+            color: $main-color;
+        }
+
+        i {
+            font-size: 1.1rem;
+            opacity: 0.6;
+        }
+    }
+
+    &__saving {
+        margin-top: 12px;
+        color: #15803d;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* Sticky buy bar — phones only */
+    &__buybar {
+        display: none;
+
+        @include mobile {
+            position: fixed;
+            inset: auto 0 0 0;
+            z-index: 90;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+            background-color: rgba(#fff, 0.96);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba($main-color, 0.12);
+            box-shadow: 0 -12px 30px -22px rgba($shadow-color, 0.8);
+        }
+
+        &__price {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+
+            strong {
+                color: $txt-main-color;
+                font-size: 1.05rem;
+                font-weight: 800;
+            }
+
+            small {
+                color: $txt-second-color;
+                font-size: 0.72rem;
+            }
+        }
+
+        &__btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            flex: 1;
+            height: 46px;
+            border: 0;
+            border-radius: $radius-pill;
+            background: $grad-main;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 700;
+
+            i { font-size: 1.2rem; }
+
+            &:disabled {
+                background: rgba($txt-second-color, 0.3);
+            }
+        }
+    }
+
+    &__promises {
+        margin-top: 26px;
+        padding-top: 22px;
+        border-top: 1px solid rgba($main-color, 0.1);
+        list-style: none;
+        display: grid;
+        gap: 14px;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            i {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                background-color: rgba($main-color, 0.1);
+                color: $main-color;
+                font-size: 1.2rem;
+            }
+
+            span {
+                display: flex;
+                flex-direction: column;
+                line-height: 1.3;
+            }
+
+            strong {
+                color: $txt-main-color;
+                font-size: 0.85rem;
+                font-weight: 700;
+            }
+
+            small {
+                color: $txt-second-color;
+                font-size: 0.76rem;
+            }
+        }
+    }
+
+    &__facts {
+        margin: 22px 0;
+        padding: 16px 18px;
+        border-radius: $radius;
+        background-color: rgba($main-color, 0.05);
+
+        &__row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 7px 0;
+            font-size: 0.82rem;
+            color: $txt-second-color;
+
+            + .product__facts__row {
+                border-top: 1px solid rgba($main-color, 0.1);
+            }
+
+            strong {
+                color: $txt-main-color;
+                font-weight: 600;
+            }
+        }
+
+        &__state {
+            &.is-success { color: #15803d; }
+            &.is-warning { color: #b45309; }
+            &.is-danger  { color: $accent-color; }
+        }
+    }
+}
+
+/* ---------- section lead-in note ---------- */
+.section__note {
+    margin: -6px 0 22px;
+    color: $txt-second-color;
+    font-size: 0.85rem;
+    max-width: 640px;
+}
+
+/* ---------- cart line meta ---------- */
+.cart__item__info__meta {
+    display: block;
+    margin-top: 3px;
+    color: $txt-second-color;
+    font-size: 0.72rem;
+    font-weight: 400;
+}

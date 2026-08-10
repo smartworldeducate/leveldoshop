@@ -1,6 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@100;300;400;500;700;800;900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
-
-@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@100;300;400;500;700;800;900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@100;300;400;500;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,500;1,600&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
 
 * {
     padding: 0;
@@ -20,6 +18,15 @@ html {
 
 body {
     font-family: "Roboto", sans-serif;
+    color: $txt-main-color;
+    background-color: $app-bg;
+    // Soft brand-blue depth glows on the light canvas.
+    background-image:
+        radial-gradient(900px 520px at 100% -8%, rgba(91, 131, 214, 0.16), transparent 60%),
+        radial-gradient(1000px 640px at -8% 4%, rgba($shadow-color, 0.18), transparent 58%),
+        radial-gradient(800px 800px at 60% 108%, rgba(47, 77, 138, 0.1), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 }
 
 ul {
@@ -86,22 +93,39 @@ img {
     }
 }
 
+// The header is sticky, not fixed, so content no longer offsets by its height
+// — which is what let the header grow a second row (the aisle bar) for free.
 .main {
-    margin-top: $header-height;
-    margin-bottom: 2rem;
+    padding-top: $main-pad-top;
+    margin-bottom: 3rem;
     min-height: 100vh;
 
     @include tablet {
-        margin-top: calc(#{$header-tablet-height} + 20px);
+        padding-top: $main-pad-top-tablet;
     }
 
     @include mobile {
-        margin-top: calc(#{$header-mobile-height} + 10px);
+        padding-top: $main-pad-top-mobile;
+        margin-bottom: 2rem;
     }
 }
 
 .grid {
     display: grid;
+}
+
+// Own class, NOT `.grid` — the dashboard uses Tailwind's `.grid` with `gap-*`
+// utilities, and this stylesheet loads last, so a gap here would win over them.
+.grid-gapped {
+    gap: var(--grid-gap, 0px);
+
+    @include tablet {
+        gap: calc(var(--grid-gap, 0px) * 0.7);
+    }
+
+    @include mobile {
+        gap: calc(var(--grid-gap, 0px) * 0.55);
+    }
 }
 
 /* AddProduct Form Styles */
@@ -149,8 +173,8 @@ img {
         transition: border 0.2s ease-in-out;
 
         &:focus {
-          border-color: #0070f3;
-          box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+          border-color: $main-color;
+          box-shadow: 0 0 0 2px rgba($main-color, 0.2);
         }
       }
 
@@ -175,7 +199,7 @@ img {
 
     button {
       padding: 0.75rem;
-      background-color: #0070f3;
+      background-color: $main-color;
       color: white;
       font-weight: 600;
       border-radius: 8px;
@@ -184,7 +208,7 @@ img {
       transition: background-color 0.2s ease-in-out;
 
       &:hover {
-        background-color: #005ac1;
+        background-color: $main-dark;
       }
     }
   }

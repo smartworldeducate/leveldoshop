@@ -1,31 +1,111 @@
+// ============================================================
+// Application theme — one brand colour across storefront,
+// admin and dashboard: #4267b2 (blue), soft shadows, rounded
+// surfaces. A single rose accent carries sale / wishlist.
+// ============================================================
 $main-bg: #fff;
-$main-color: #4267b2;
+$app-bg: #eef2f9; // soft blue-tinted canvas — one background across the whole app
+$main-color: #4267b2; // BRAND — primary blue
+$main-dark: #2f4d8a; // pressed / deep states
+$main-light: #5b83d6; // hover / gradient top stop
+$main-soft: #dbe3f4; // tinted fills, borders on white
 
-$txt-main-color: #000;
-$txt-second-color: #8d8d8d;
+$accent-color: #ff4d6d; // rose accent — sale badges, wishlist
+$accent-pink: $accent-color; // legacy alias
+
+// Shadow tint — derived from the brand blue so elevation matches
+$shadow-color: #4267b2;
+
+// Gradients
+$grad-main: linear-gradient(150deg, #5b83d6 0%, #4267b2 100%);
+$grad-accent: linear-gradient(150deg, #ff7a92 0%, #ef3b5e 100%);
+$grad-pink: $grad-accent; // legacy alias
+$grad-hero: linear-gradient(135deg, #4f79c9 0%, #2f4f8f 100%);
+
+// Editorial display face — used only for hero headlines and section titles.
+// Everything else stays on Roboto: the serif is an accent, not a body font.
+$font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+
+$txt-main-color: #1e2033;
+$txt-second-color: #8b8ba3;
 $txt-white: #fff;
 
 $btn-main-bg: $main-color;
 $btn-main-color: #fff;
 
-$header-height: 170px;
-$header-tablet-height: 70px;
-$header-mobile-height: 40px;
-$header-shrink-height: 70px;
+// Rounded surfaces
+$radius: 18px;
+$radius-lg: 26px;
+$radius-pill: 999px;
 
-$box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+// Breathing room under the fixed header. Full-bleed blocks (hero slider) must
+// pull up by header + this, or they leave a gap at the top of the page.
+$main-pad-top: 40px;
+$main-pad-top-tablet: 28px;
+$main-pad-top-mobile: 20px;
+
+$header-height: 92px;
+$header-tablet-height: 70px;
+$header-mobile-height: 56px;
+$header-shrink-height: 74px;
+
+// Soft, blue-tinted elevation
+$box-shadow: 0 20px 45px -22px rgba($shadow-color, 0.35);
 
 $colors: (
-    "blue": #4267b2,
-    "orange": #fbb96b,
-    "pink": #fe7e73,
+    "blue": $main-color,
+    "orange": #f59e0b,
+    "pink": $accent-color,
     "white": #fff,
-    "black": #000,
+    "black": #1e2033,
     "main": $main-color,
-    "red": #ff0000,
+    "red": $accent-color,
 );
 
 $mobile-width: 600px;
 $tablet-width: 1024px;
 
 $numbers: (0, 1, 2, 3, 4, 5, 6, 7, 8);
+
+/* =========================================================
+   BEAMS 2.0 — Admin design tokens
+   Re-themed to the single brand blue (#4267b2).
+   Navy/ink stay dark for text readability; every primary
+   interactive colour and the sidebar use the brand blue.
+========================================================= */
+
+// Brand neutrals & surfaces
+$beams-navy:       #1E2033;   // dark neutral for text
+$beams-navy-deep:  #14162A;
+$beams-blue:       $main-color; // primary interactive (brand blue)
+$beams-sky:        $main-light; // lighter brand blue
+$beams-accent:     $accent-color; // rose accent
+$beams-canvas:     $app-bg;    // app background
+$beams-line:       #DFE6F2;   // borders / dividers
+$beams-surface:    #FFFFFF;   // cards, sidebar logo, inputs
+$beams-sidebar:    linear-gradient(180deg, #5b83d6 0%, #35528f 100%); // brand blue rail
+
+// Semantic roles
+$beams-success:    #10B981;
+$beams-warning:    #F59E0B;
+$beams-danger:     #DF1B41;
+$beams-info:       #0891B2;
+
+// Text
+$beams-ink:        #0A2540;   // primary text
+$beams-muted:      #64748B;   // secondary text
+$beams-faint:      #94A3B8;   // captions / metadata
+
+// Typography — two families, one scale
+$beams-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+$beams-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+// Radii — rounder, to match the dashboard surfaces
+$beams-radius:     12px;
+$beams-radius-lg:  18px;
+$beams-radius-pill: 999px;
+
+// Elevation (soft, tinted with the brand blue)
+$beams-shadow-sm:  0 2px 6px rgba($shadow-color, 0.10);
+$beams-shadow:     0 12px 28px -18px rgba($shadow-color, 0.35);
+$beams-shadow-lg:  0 30px 60px -30px rgba($shadow-color, 0.45);

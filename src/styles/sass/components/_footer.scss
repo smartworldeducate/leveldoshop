@@ -1,27 +1,82 @@
 .footer {
-    padding: 70px 0;
-    box-shadow: $box-shadow;
+    position: relative;
+    margin-top: 90px;
+    padding: 64px 0 28px;
     font-size: 1.1rem;
+    color: rgba(#fff, 0.82);
+    background: linear-gradient(135deg, #5b83d6 0%, #4267b2 60%, #35528f 100%);
+    border-radius: 36px 36px 0 0;
+    box-shadow: 0 -30px 60px -40px rgba($shadow-color, 0.5);
 
     &__logo {
         height: 38px;
+        margin-bottom: 1.25rem;
+        // Render the (coloured) raster logo as solid white on the dark footer.
+        filter: brightness(0) invert(1);
     }
 
     &__about {
         p {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
         }
     }
 
     &__title {
         text-transform: uppercase;
-        margin-bottom: 2rem;
-        font-weight: 600;
+        margin-bottom: 1.75rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.06em;
+        color: #fff;
     }
 
     &__content {
         p {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
+
+        strong {
+            color: #fff;
+        }
+
+        a {
+            color: rgba(#fff, 0.8);
+            transition: color 0.2s ease, padding-left 0.2s ease;
+
+            &:hover {
+                color: #fff;
+                padding-left: 6px;
+            }
+        }
+    }
+
+    &__app-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fff;
+        color: $main-color;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+
+        &:hover {
+            background: $main-soft;
+        }
+    }
+
+    &__bottom {
+        margin-top: 52px;
+        padding-top: 22px;
+        border-top: 1px solid rgba(#fff, 0.15);
+        text-align: center;
+        font-size: 0.9rem;
+        color: rgba(#fff, 0.7);
     }
 }

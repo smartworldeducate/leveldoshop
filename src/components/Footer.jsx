@@ -1,22 +1,23 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSelector } from 'react-redux'
 
 import Grid from './Grid'
 import logo from '../assets/images/Logo-2.png'
 
 const footerAboutLinks = [
   { display: "About Us", path: "/policy" },
-  { display: "Contact", path: "/policy" },
-  { display: "Careers", path: "/policy" },
-  { display: "News", path: "/policy" },
+  { display: "Contact", path: "/contact" },
+  { display: "Our Growers", path: "/policy" },
+  { display: "Recipes & News", path: "/posts" },
   { display: "Store Locations", path: "/policy" }
 ]
 
 const footerCustomerLinks = [
-  { display: "Return Policy", path: "/policy" },
-  { display: "Warranty Policy", path: "/policy" },
-  { display: "Refund Policy", path: "/policy" }
+  { display: "Delivery & Slots", path: "/policy?tab=delivery" },
+  { display: "Freshness Promise", path: "/policy?tab=freshness" },
+  { display: "Payment & Refunds", path: "/policy?tab=cod" }
 ]
 
 const downloadApp = () => {
@@ -33,23 +34,48 @@ const downloadApp = () => {
 };
 
 export default function Footer() {
+  const { contact = {}, storeName } = useSelector((state) => state.settings.values)
+  const hasContact = Boolean(contact.phone || contact.whatsapp || contact.email || contact.hours)
+
   return (
     <footer className="footer">
       <div className="container">
-        <Grid col={4} mdCol={2} smCol={1} gap={10}>
-          {/* Support Hotline */}
+        <Grid col={4} mdCol={2} smCol={1} gap={40}>
+          {/* Reach us — the same details the contact page uses */}
           <div>
-            <div className="footer__title">Support Hotline</div>
+            <div className="footer__title">Get in touch</div>
             <div className="footer__content">
-              <p>Order Support <strong>03010483942</strong></p>
-              <p>Order Inquiries <strong>03039255409</strong></p>
-              <p>Feedback & Complaints <strong>03017897426</strong></p>
+              {contact.phone && (
+                <p>
+                  Call us <strong>{contact.phone}</strong>
+                </p>
+              )}
+              {contact.whatsapp && (
+                <p>
+                  WhatsApp <strong>{contact.whatsapp}</strong>
+                </p>
+              )}
+              {contact.email && (
+                <p>
+                  Email <strong>{contact.email}</strong>
+                </p>
+              )}
+              {contact.hours && (
+                <p>
+                  Open <strong>{contact.hours}</strong>
+                </p>
+              )}
+              {!hasContact && (
+                <p>
+                  <Link href="/contact">Send us a message</Link>
+                </p>
+              )}
             </div>
           </div>
 
           {/* About Links */}
           <div>
-            <div className="footer__title">About Yolo</div>
+            <div className="footer__title">About Leveldo</div>
             <div className="footer__content">
               {footerAboutLinks.map((item, index) => (
                 <p key={index}>
@@ -77,7 +103,7 @@ export default function Footer() {
               <Link href="/">
                 <Image
                   src={logo}
-                  alt="Yolo Logo"
+                  alt="Leveldo Grocery"
                   width={150} // adjust width
                   height={50} // adjust height
                   className="footer__logo"
@@ -85,24 +111,20 @@ export default function Footer() {
               </Link>
             </p>
             <p>
-              Our goal is to bring fresh fashion joy every day to millions of consumers. Join Yolo in embracing a more dynamic and positive lifestyle.
+              A neighbourhood grocery that buys small and often, so what reaches your kitchen is
+              what came in this morning. Same-day delivery, cash on delivery, and a freshness
+              promise we actually honour.
             </p>
-            <button
-              onClick={downloadApp}
-              style={{
-                backgroundColor:'#4267b2',
-                color: "#fff",
-                padding: "12px 24px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                border: "none",
-                cursor: "pointer"
-              }}
-            >
+            <button onClick={downloadApp} className="footer__app-btn">
+              <i className="bx bx-download"></i>
               Get App
             </button>
           </div>
         </Grid>
+
+        <div className="footer__bottom">
+          © {new Date().getFullYear()} {storeName || 'Leveldo Grocery'}. All rights reserved.
+        </div>
       </div>
     </footer>
   )

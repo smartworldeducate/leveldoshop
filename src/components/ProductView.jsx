@@ -1,73 +1,107 @@
 import React, { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import Image from 'next/image'
 
 import { addItem } from '../redux/shopping-cart/cartItemsSlide'
 import { remove } from '../redux/product-modal/productModalSlice'
 
 import Button from './Button'
-import numberWithCommas from '../utils/numberWithCommas'
-import Image from 'next/image'
+import {
+  STORAGE_TYPES,
+  categoryLabel,
+  discountPercent,
+  expiryState,
+  formatMoney,
+  isSellable,
+  packLabel,
+  stockState,
+  unitPrice,
+} from '../data/grocery'
 
-const ProductView = ({ product: propProduct }) => {
+const FALLBACK = {
+  title: '',
+  price: 0,
+  images: ['/placeholder.png'],
+  categorySlug: '',
+  slug: '',
+  description: '',
+  unit: 'pc',
+  packSize: 1,
+  stock: 0,
+}
+
+const ProductView = ({ product: propProduct, isModal = false }) => {
   const dispatch = useDispatch()
   const router = useRouter()
+  const categories = useSelector((state) => state.categories.items)
 
-  const product = propProduct || {
-    title: '',
-    price: 0,
-    images: ['/placeholder.png', '/placeholder.png'], // Firestore uses images array
-    categorySlug: '',
-    colors: [],
-    slug: '',
-    size: [],
-    description: '',
-  }
+  const product = propProduct || FALLBACK
+  const images = product.images?.length ? product.images : FALLBACK.images
 
-  const [previewImg, setPreviewImg] = useState(product.images[0])
+  const [previewImg, setPreviewImg] = useState(images[0])
   const [descriptionExpand, setDescriptionExpand] = useState(false)
-  const [color, setColor] = useState(undefined)
-  const [size, setSize] = useState(undefined)
   const [quantity, setQuantity] = useState(1)
 
-  const updateQuantity = (type) => {
-    setQuantity(prev => type === 'plus' ? prev + 1 : prev > 1 ? prev - 1 : 1)
-  }
+  const stock = stockState(product.stock)
+  const expiry = expiryState(product.expiry)
+  const off = discountPercent(product)
+  const perUnit = unitPrice(product)
+  const sellable = isSellable(product)
+  const storage = STORAGE_TYPES.find((s) => s.value === product.storage)
+  // Roughly the height the collapsed panel shows; below it, nothing is hidden.
+  const isLongDescription =
+    String(product.description || '').replace(/<[^>]*>/g, '').length > 320
+  // Never let the basket promise more than the shelf holds.
+  const maxQuantity = Math.max(1, Number(product.stock) || 1)
 
   useEffect(() => {
-    setPreviewImg(product.images[0])
+    setPreviewImg(images[0])
     setQuantity(1)
-    setColor(undefined)
-    setSize(undefined)
-  }, [product])
+  }, [product]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const check = () => {
-    if (!color) { alert('Please select a color!'); return false }
-    if (!size) { alert('Please select a size!'); return false }
+  const updateQuantity = (type) =>
+    setQuantity((prev) =>
+      type === 'plus' ? Math.min(maxQuantity, prev + 1) : Math.max(1, prev - 1)
+    )
+
+  const addToCart = () => {
+    if (!sellable) return false
+    dispatch(addItem({ slug: product.slug, price: Number(product.price), quantity }))
     return true
   }
 
-  const addToCart = () => {
-    if (check()) {
-      dispatch(addItem({ slug: product.slug, color, size, price: product.price, quantity }))
-    }
-  }
-
   const goToCart = () => {
-    if (check()) {
-      dispatch(addItem({ slug: product.slug, color, size, price: product.price, quantity }))
-      dispatch(remove())
-      router.push('/cart')
-    }
+    if (!addToCart()) return
+    dispatch(remove())
+    router.push('/cart')
   }
 
   return (
     <div className="product">
+      {/* Breadcrumbs — only on the real product page, not inside the modal */}
+      {!isModal && (
+        <nav className="product__crumbs">
+          <Link href="/">Home</Link>
+          <i className="bx bx-chevron-right"></i>
+          <Link href="/catalog">Shop</Link>
+          {product.categorySlug && (
+            <>
+              <i className="bx bx-chevron-right"></i>
+              <Link href={`/catalog?category=${product.categorySlug}`}>
+                {categoryLabel(categories, product.categorySlug)}
+              </Link>
+            </>
+          )}
+        </nav>
+      )}
+
       {/* Images */}
       <div className="product__images">
         <div className="product__images__list">
-          {product.images.map((img, idx) => (
+          {images.map((img, idx) => (
             <div
               key={idx}
               className={`product__images__list__item ${previewImg === img ? 'active' : ''}`}
@@ -82,55 +116,69 @@ const ProductView = ({ product: propProduct }) => {
           <Image src={previewImg} alt={product.title} width={500} height={500} />
         </div>
 
-        {/* Description */}
-        <div className={`product-description ${descriptionExpand ? 'expand' : ''}`}>
-          <div className="product-description__title">Product Details</div>
-          <div className="product-description__content" dangerouslySetInnerHTML={{ __html: product.description }} />
-          <div className="product-description__toggle">
-            <Button size="sm" onClick={() => setDescriptionExpand(!descriptionExpand)}>
-              {descriptionExpand ? 'Collapse' : 'See more'}
-            </Button>
+        {product.description && (
+          <div className={`product-description ${descriptionExpand ? 'expand' : ''}`}>
+            <div className="product-description__title">About this product</div>
+            <div
+              className="product-description__content"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
+            {/* Only offer the toggle when there is actually more to reveal. */}
+            {isLongDescription && (
+              <div className="product-description__toggle">
+                <Button size="sm" onClick={() => setDescriptionExpand(!descriptionExpand)}>
+                  {descriptionExpand ? 'Collapse' : 'See more'}
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Info */}
       <div className="product__info">
+        <div className="product__info__tags">
+          {product.brand && <span className="tag">{product.brand}</span>}
+          {product.categorySlug && (
+            <span className="tag">{categoryLabel(categories, product.categorySlug)}</span>
+          )}
+          {product.organic && <span className="tag tag--fresh">Organic</span>}
+          {off && <span className="tag tag--sale">-{off}%</span>}
+        </div>
+
         <h1 className="product__info__title">{product.title}</h1>
+
         <div className="product__info__item">
-          <span className="product__info__item__price">{numberWithCommas(product.price)}</span>
+          <span className="product__info__item__price">{formatMoney(product.price)}</span>
+          {off && (
+            <span className="product__info__item__price--old">{formatMoney(product.comparePrice)}</span>
+          )}
+          <span className="product__info__item__unit">
+            per {packLabel(product)}
+            {perUnit ? ` · ${perUnit}` : ''}
+          </span>
         </div>
 
-        {/* Colors */}
-        <div className="product__info__item">
-          <div className="product__info__item__title">Color</div>
-          <div className="product__info__item__list">
-            {product.colors.map((c, i) => (
-              <div
-                key={i}
-                className={`product__info__item__list__item ${color === c ? 'active' : ''}`}
-                onClick={() => setColor(c)}
-              >
-                <div className={`circle bg-${c}`}></div>
-              </div>
-            ))}
+        {/* Grocery facts */}
+        <div className="product__facts">
+          <div className="product__facts__row">
+            <span>Availability</span>
+            <strong className={`product__facts__state is-${stock.tone}`}>{stock.label}</strong>
           </div>
-        </div>
-
-        {/* Sizes */}
-        <div className="product__info__item">
-          <div className="product__info__item__title">Size</div>
-          <div className="product__info__item__list">
-            {product.size.map((s, i) => (
-              <div
-                key={i}
-                className={`product__info__item__list__item ${size === s ? 'active' : ''}`}
-                onClick={() => setSize(s)}
-              >
-                <span className="product__info__item__list__item__size">{s}</span>
-              </div>
-            ))}
-          </div>
+          {expiry && (
+            <div className="product__facts__row">
+              <span>Best before</span>
+              <strong className={`product__facts__state is-${expiry.tone}`}>
+                {product.expiry} · {expiry.label}
+              </strong>
+            </div>
+          )}
+          {storage && (
+            <div className="product__facts__row">
+              <span>Storage</span>
+              <strong>{storage.label}</strong>
+            </div>
+          )}
         </div>
 
         {/* Quantity */}
@@ -145,14 +193,74 @@ const ProductView = ({ product: propProduct }) => {
               <i className="bx bx-plus"></i>
             </div>
           </div>
+          <div className="product__info__item__subtotal">
+            Subtotal <strong>{formatMoney((Number(product.price) || 0) * quantity)}</strong>
+          </div>
         </div>
 
         {/* Buttons */}
-        <div className="product__info__item">
-          <Button size='sm' onClick={addToCart}>Add to cart</Button>
-          <Button size='sm' onClick={goToCart}>Buy now</Button>
+        <div className="product__info__item product__info__buttons">
+          <Button size="sm" onClick={addToCart} disabled={!sellable}>
+            {sellable ? 'Add to cart' : 'Sold out'}
+          </Button>
+          <Button size="sm" onClick={goToCart} disabled={!sellable}>
+            Buy now
+          </Button>
         </div>
+
+        {off && (
+          <p className="product__saving">
+            You save {formatMoney((Number(product.comparePrice) || 0) - (Number(product.price) || 0))}{' '}
+            on this pack
+          </p>
+        )}
+
+        {/* What every basket comes with — the same promises as the home page */}
+        <ul className="product__promises">
+          <li>
+            <i className="bx bx-cycling"></i>
+            <span>
+              <strong>Same-day delivery</strong>
+              <small>Order before 4pm</small>
+            </span>
+          </li>
+          <li>
+            <i className="bx bx-check-shield"></i>
+            <span>
+              <strong>Freshness promise</strong>
+              <small>Not fresh? We replace it</small>
+            </span>
+          </li>
+          <li>
+            <i className="bx bx-wallet"></i>
+            <span>
+              <strong>Cash on delivery</strong>
+              <small>Pay when it arrives</small>
+            </span>
+          </li>
+        </ul>
       </div>
+
+      {/* Phone buy bar — the real one scrolls away above the fold on mobile */}
+      {!isModal && (
+        <div className="product__buybar">
+          <div className="product__buybar__price">
+            <strong>{formatMoney((Number(product.price) || 0) * quantity)}</strong>
+            <small>
+              {quantity} × {packLabel(product)}
+            </small>
+          </div>
+          <button
+            type="button"
+            className="product__buybar__btn"
+            onClick={addToCart}
+            disabled={!sellable}
+          >
+            <i className="bx bx-cart"></i>
+            {sellable ? 'Add to cart' : 'Sold out'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

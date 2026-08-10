@@ -1,188 +1,244 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 
 import CheckBox from '../components/CheckBox'
-import Button from '../components/Button'
-import InfinityList from '../components/InfinityList'
-import { fetchProducts } from '../redux/products/productsSlice'
-import { useRouter } from 'next/router'
+import Grid from '../components/Grid'
+import ProductCard from '../components/ProductCard'
 import SearchModal from '@/components/SearchModal'
+import { fetchProducts } from '../redux/products/productsSlice'
+import { categoryLabel, isSellable, prettySlug, visibleCategories } from '../data/grocery'
+
+const SORTS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'price-asc', label: 'Price: low to high' },
+  { value: 'price-desc', label: 'Price: high to low' },
+  { value: 'name', label: 'Name A–Z' },
+]
+
+const EMPTY_FILTER = { category: [], inStock: false, organic: false, maxPrice: null }
 
 export default function Catalog() {
-   const router = useRouter()
+  const router = useRouter()
   const dispatch = useDispatch()
-  const [searchText, setSearchText] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
   const allProducts = useSelector(state => state.products.items)
-  const [products, setProducts] = useState([])
-  const [filter, setFilter] = useState({ category: [], color: [], size: [] })
-  const filterRef = useRef(null)
+  const loading = useSelector(state => state.products.loading)
+  const categories = useSelector(state => state.categories.items)
 
-  // Fetch products via Redux on mount
+  const visible = useMemo(() => visibleCategories(categories), [categories])
+  // A hidden aisle takes its products off the storefront with it.
+  const hiddenSlugs = useMemo(
+    () => categories.filter(c => c.visible === false).map(c => c.slug),
+    [categories]
+  )
+
+  const [searchText, setSearchText] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [filter, setFilter] = useState(EMPTY_FILTER)
+  const [sort, setSort] = useState('newest')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
   useEffect(() => {
     dispatch(fetchProducts())
   }, [dispatch])
 
+  // Deep links: ?category= from the aisle bar, ?q= from either search box.
   useEffect(() => {
-  if (router.query.search === "1") {
-    setShowSearch(true);
-  }
-}, [router.query]);
-
-const closeSearch = () => {
-  setShowSearch(false);
-  router.replace("/catalog", undefined, { shallow: true });
-};
-
-
-  const filterSelect = (type, checked, item) => {
-    if (checked) {
-      switch (type) {
-        case 'CATEGORY':
-          setFilter(prev => ({ ...prev, category: [...prev.category, item] }))
-          break
-        case 'COLOR':
-          setFilter(prev => ({ ...prev, color: [...prev.color, item] }))
-          break
-        case 'SIZE':
-          setFilter(prev => ({ ...prev, size: [...prev.size, item] }))
-          break
-      }
-    } else {
-      switch (type) {
-        case 'CATEGORY':
-          setFilter(prev => ({ ...prev, category: prev.category.filter(c => c !== item) }))
-          break
-        case 'COLOR':
-          setFilter(prev => ({ ...prev, color: prev.color.filter(c => c !== item) }))
-          break
-        case 'SIZE':
-          setFilter(prev => ({ ...prev, size: prev.size.filter(s => s !== item) }))
-          break
-      }
+    if (typeof router.query.category === 'string') {
+      setFilter(prev => ({ ...prev, category: [router.query.category] }))
     }
+    if (typeof router.query.q === 'string') setSearchText(router.query.q)
+    if (router.query.search === '1') setShowSearch(true)
+  }, [router.query])
+
+  const closeSearch = () => {
+    setShowSearch(false)
+    router.replace('/catalog', undefined, { shallow: true })
   }
 
-  const clearFilter = () => setFilter({ category: [], color: [], size: [] })
+  const priceCeiling = useMemo(() => {
+    const top = Math.max(0, ...allProducts.map(p => Number(p.price) || 0))
+    return Math.ceil(top) || 100
+  }, [allProducts])
 
-  const updateProducts = useCallback(() => {
-  if (!allProducts || allProducts.length === 0) return;
+  // Every visible aisle is listed with its count — a zero tells the shopper the
+  // aisle is empty rather than leaving them to wonder where it went.
+  const aisles = useMemo(() => {
+    const counts = allProducts.reduce((acc, p) => {
+      if (p.categorySlug) acc[p.categorySlug] = (acc[p.categorySlug] || 0) + 1
+      return acc
+    }, {})
 
-  let temp = [...allProducts];
+    const known = visible.map(c => ({ ...c, count: counts[c.slug] || 0 }))
+    // Products can still reference an aisle that was renamed or removed; list
+    // those separately so they stay reachable instead of vanishing.
+    const strays = Object.keys(counts)
+      .filter(slug => !categories.some(c => c.slug === slug))
+      .map(slug => ({ slug, name: prettySlug(slug), accent: '#94A3B8', count: counts[slug] }))
 
-  // 🔎 Name search
-  if (searchText) {
-    temp = temp.filter(p =>
-      p.title.toLowerCase().includes(searchText.toLowerCase())
-    );
-  }
+    return [...known, ...strays]
+  }, [allProducts, visible, categories])
 
-  if (filter.category.length > 0)
-    temp = temp.filter(p => filter.category.includes(p.categorySlug));
+  const toggleCategory = (slug, checked) =>
+    setFilter(prev => ({
+      ...prev,
+      category: checked ? [...prev.category, slug] : prev.category.filter(c => c !== slug),
+    }))
 
-  if (filter.color.length > 0)
-    temp = temp.filter(p => p.colors.some(c => filter.color.includes(c)));
+  const clearFilter = () => setFilter(EMPTY_FILTER)
 
-  if (filter.size.length > 0)
-    temp = temp.filter(p => p.size.some(s => filter.size.includes(s)));
+  const products = useMemo(() => {
+    const term = searchText.trim().toLowerCase()
+    let list = allProducts.filter(p => {
+      if (hiddenSlugs.includes(p.categorySlug)) return false
+      if (term && !`${p.title} ${p.brand || ''}`.toLowerCase().includes(term)) return false
+      if (filter.category.length && !filter.category.includes(p.categorySlug)) return false
+      if (filter.inStock && !isSellable(p)) return false
+      if (filter.organic && !p.organic) return false
+      if (filter.maxPrice != null && (Number(p.price) || 0) > filter.maxPrice) return false
+      return true
+    })
 
-  setProducts(temp);
-}, [allProducts, filter, searchText]);
+    if (sort === 'price-asc') list = [...list].sort((a, b) => (a.price || 0) - (b.price || 0))
+    else if (sort === 'price-desc') list = [...list].sort((a, b) => (b.price || 0) - (a.price || 0))
+    else if (sort === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
 
+    return list
+  }, [allProducts, filter, searchText, sort, hiddenSlugs])
 
-  useEffect(() => { updateProducts() }, [updateProducts])
+  const activeCount =
+    filter.category.length +
+    (filter.inStock ? 1 : 0) +
+    (filter.organic ? 1 : 0) +
+    (filter.maxPrice != null ? 1 : 0)
 
-  // const showHideFilter = () => filterRef.current.classList.toggle('active')
-  const showHideFilter = () => {
-  filterRef.current.classList.toggle("active");
-
-  if (router.query.search) {
-    router.replace("/catalog", undefined, { shallow: true });
-  }
-};
-
-
-  useEffect(() => {
-  if (router.query.search === "1") {
-    filterRef.current?.classList.add("active");
-  }
-}, [router.query]);
-
+  const heading =
+    filter.category.length === 1
+      ? categoryLabel(categories, filter.category[0])
+      : 'All groceries'
 
   return (
     <>
       <Head>
-        <title>Shop</title>
-        <meta name="description" content="Catalog page with product filters" />
+        <title>{`Shop ${heading.toLowerCase()}`}</title>
+        <meta name="description" content="Browse the full grocery range by aisle, price and availability." />
       </Head>
 
       <div className="catalog">
-        <div className="catalog__filter" ref={filterRef}>
-          <div className="catalog__filter__close" onClick={showHideFilter}>
-            <i className="bx bx-left-arrow-alt"></i>
+        <aside className={`catalog__filter ${drawerOpen ? 'is-open' : ''}`}>
+          <div className="catalog__filter__head">
+            <span>Filters</span>
+            <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close filters">
+              <i className="bx bx-x"></i>
+            </button>
           </div>
 
-          {/* Category filter */}
           <div className="catalog__filter__widget">
-            <div className="catalog__filter__widget__title">Category</div>
+            <div className="catalog__filter__widget__title">Aisle</div>
             <div className="catalog__filter__widget__content">
-              {[...new Set(allProducts.map(p => p.categorySlug))].map((cat, idx) => (
+              {aisles.map(c => (
                 <CheckBox
-                  key={idx}
-                  label={cat}
-                  checked={filter.category.includes(cat)}
-                  onChange={e => filterSelect('CATEGORY', e.checked, cat)}
+                  key={c.slug}
+                  label={c.name}
+                  count={c.count}
+                  checked={filter.category.includes(c.slug)}
+                  onChange={e => toggleCategory(c.slug, e.checked)}
                 />
               ))}
             </div>
           </div>
 
-          {/* Color filter */}
           <div className="catalog__filter__widget">
-            <div className="catalog__filter__widget__title">Color</div>
+            <div className="catalog__filter__widget__title">Availability</div>
             <div className="catalog__filter__widget__content">
-              {[...new Set(allProducts.flatMap(p => p.colors))].map((c, idx) => (
-                <CheckBox
-                  key={idx}
-                  label={c}
-                  checked={filter.color.includes(c)}
-                  onChange={e => filterSelect('COLOR', e.checked, c)}
-                />
-              ))}
+              <CheckBox
+                label="In stock today"
+                checked={filter.inStock}
+                onChange={e => setFilter(prev => ({ ...prev, inStock: e.checked }))}
+              />
+              <CheckBox
+                label="Certified organic"
+                checked={filter.organic}
+                onChange={e => setFilter(prev => ({ ...prev, organic: e.checked }))}
+              />
             </div>
           </div>
 
-          {/* Size filter */}
           <div className="catalog__filter__widget">
-            <div className="catalog__filter__widget__title">Size</div>
+            <div className="catalog__filter__widget__title">
+              Price up to <strong>${filter.maxPrice ?? priceCeiling}</strong>
+            </div>
             <div className="catalog__filter__widget__content">
-              {[...new Set(allProducts.flatMap(p => p.size))].map((s, idx) => (
-                <CheckBox
-                  key={idx}
-                  label={s}
-                  checked={filter.size.includes(s)}
-                  onChange={e => filterSelect('SIZE', e.checked, s)}
-                />
-              ))}
+              <input
+                type="range"
+                min="1"
+                max={priceCeiling}
+                value={filter.maxPrice ?? priceCeiling}
+                onChange={e => setFilter(prev => ({ ...prev, maxPrice: Number(e.target.value) }))}
+                className="catalog__filter__range"
+              />
             </div>
           </div>
 
-          <Button size="sm" onClick={clearFilter}>Clear filters</Button>
-        </div>
-
-        <div className="catalog__filter__toggle">
-          <Button size="sm" onClick={showHideFilter}>Filters</Button>
-        </div>
+          <button type="button" className="catalog__filter__clear" onClick={clearFilter}>
+            {activeCount ? `Clear ${activeCount} filter${activeCount > 1 ? 's' : ''}` : 'Clear filters'}
+          </button>
+        </aside>
 
         <div className="catalog__content">
-          <InfinityList data={products.map(p => ({
-            ...p,
-            image01: p.images[0],
-            image02: p.images[1] || p.images[0]
-          }))} />
+          <div className="catalog__toolbar">
+            <div>
+              <h1 className="catalog__toolbar__heading">{heading}</h1>
+              <span className="catalog__toolbar__count">
+                {products.length} item{products.length === 1 ? '' : 's'}
+                {searchText ? ` for “${searchText}”` : ''}
+              </span>
+            </div>
+
+            <div className="catalog__toolbar__tools">
+              <button
+                type="button"
+                className="catalog__toolbar__filters"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <i className="bx bx-filter-alt"></i>
+                Filters{activeCount ? ` (${activeCount})` : ''}
+              </button>
+
+              <label className="catalog__toolbar__sort">
+                <i className="bx bx-sort"></i>
+                <select value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort products">
+                  {SORTS.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {products.length ? (
+            <Grid col={5} mdCol={3} smCol={2} gap={20}>
+              {products.map(item => (
+                <ProductCard key={item.id || item.slug} product={item} />
+              ))}
+            </Grid>
+          ) : (
+            <div className="catalog__empty">
+              <i className="bx bx-basket"></i>
+              <p>{loading ? 'Loading the shelves…' : 'Nothing matches those filters.'}</p>
+              {!loading && (
+                <button type="button" className="catalog__filter__clear" onClick={clearFilter}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {drawerOpen && <div className="catalog__scrim" onClick={() => setDrawerOpen(false)} />}
+
       <SearchModal
         isOpen={showSearch}
         onClose={closeSearch}

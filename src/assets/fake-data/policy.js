@@ -1,50 +1,50 @@
 const policy = [
   {
-    id: "warranty",
-    title: "Warranty Support",
-    icon: "bx bx-donate-heart",
-    description: "Exchange and repair at all stores.",
+    id: "delivery",
+    title: "Same-day delivery",
+    icon: "bx bx-cycling",
+    description: "Order by 4pm, eat it tonight.",
     content: [
-      "All products are covered under warranty for manufacturing defects that may occur under normal usage conditions, in accordance with the warranty terms provided at the time of purchase.",
-      "During the valid warranty period, eligible products will be repaired or replaced at no additional cost, depending on the type of defect and product availability.",
-      "To request warranty service, customers are required to present the product along with a valid purchase receipt at any of our authorized store locations.",
-      "Warranty services are available for both in-store and online purchases, ensuring consistent and reliable support regardless of where the order was placed."
+      "Orders placed before 4pm are picked, packed and delivered the same day within our service area, so the food on your table is the food we picked this morning.",
+      "Chilled and frozen items travel in insulated bags with ice packs, keeping the cold chain intact from our shelf to your door.",
+      "You will receive a message when the order leaves the store, along with a delivery window so you know when to expect the driver.",
+      "Outside the same-day zone, standard delivery arrives within two working days at a flat rate shown at checkout."
     ]
   },
   {
-    id: "shipping",
-    title: "Free Shipping",
-    icon: "bx bx-shopping-bag",
-    description: "Free shipping for orders over 239K.",
+    id: "freshness",
+    title: "Freshness promise",
+    icon: "bx bx-leaf",
+    description: "Not fresh? We replace it.",
     content: [
-      "Orders with a total value exceeding 239,000 VND qualify for free standard shipping, allowing customers to save on delivery costs.",
-      "Standard delivery typically takes between 3 to 7 business days, depending on the destination address and local courier service conditions.",
-      "All shipped orders include tracking information so customers can monitor the progress of their delivery in real time.",
-      "This free shipping policy applies to all delivery locations within Vietnam, including urban areas and remote regions."
+      "Every fruit, vegetable, dairy and bakery item is checked against its best-before date before it is packed for you.",
+      "If anything arrives past its best, tell us within 24 hours and we will replace it on your next order or refund it in full — no packaging to return.",
+      "Produce is bought in small, frequent lots rather than long-life bulk, which is why our shelves change with the season.",
+      "Items close to their best-before date are marked down in store rather than sold at full price, and are labelled clearly online."
     ]
   },
   {
     id: "cod",
-    title: "Cash on Delivery (COD)",
-    icon: "bx bx-credit-card",
-    description: "Pay upon receiving the order.",
+    title: "Cash on delivery",
+    icon: "bx bx-wallet",
+    description: "Pay when the basket arrives.",
     content: [
-      "Cash on Delivery allows customers to pay for their order only after it has been successfully delivered, eliminating the need for advance payment.",
-      "This payment option is supported nationwide through our trusted logistics and delivery partners.",
-      "Customers should ensure that someone is available at the delivery address to receive the order and complete the payment at the time of delivery.",
-      "If the delivered product does not meet expectations, customers may request a return or exchange in accordance with our return policy."
+      "Cash on delivery lets you pay only once the order is in your hands and you have checked it, with no advance payment required.",
+      "The driver carries change, and a printed receipt is included in every basket for your records.",
+      "If an item is missing or you refuse it at the door, the amount is deducted from the total before you pay.",
+      "Card payment on delivery is available on request when you place the order."
     ]
   },
   {
-    id: "vip",
-    title: "VIP Customers",
-    icon: "bx bx-diamond",
-    description: "Exclusive benefits for VIP members.",
+    id: "rewards",
+    title: "Weekly rewards",
+    icon: "bx bx-gift",
+    description: "Points on every basket.",
     content: [
-      "VIP members earn reward points on every successful purchase, which can later be redeemed for discounts, vouchers, or exclusive offers.",
-      "Members receive early access to new product launches, special promotions, and limited-time sales before they are available to the public.",
-      "VIP customers are provided with personalized assistance and priority customer support for faster and more efficient service.",
-      "Exclusive invitations to VIP-only events, campaigns, and promotional programs are offered regularly as part of the membership benefits."
+      "Every completed order earns points that convert into money off future baskets, applied automatically at checkout.",
+      "Members see the weekly market deals a day early, which matters most on the produce that sells out fastest.",
+      "Regular shoppers can save a repeat basket and reorder the household staples in a single tap.",
+      "Points never expire while your account stays active, so occasional shoppers benefit too."
     ]
   }
 ];

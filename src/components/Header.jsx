@@ -1,235 +1,203 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { useSelector } from 'react-redux'
-import { useAuth } from "../context/AuthContext";
-import logo from '../assets/images/Logo-2.png'
 import { useRouter } from 'next/router'
-import { signOut } from "firebase/auth";
-import { auth } from "../lib/firebaseClient";
+import { useSelector } from 'react-redux'
+import { signOut } from 'firebase/auth'
+
+import { useAuth } from '../context/AuthContext'
+import { auth } from '../lib/firebaseClient'
+import { isAdmin } from '../lib/admins'
+import { visibleCategories } from '../data/grocery'
+
+// `page` maps a link to its settings key; links without one are always shown.
 const mainNav = [
   { display: 'Home', path: '/' },
-  { display: 'Products', path: '/catalog' },
-  { display: 'Accessories', path: '/accessories' },
-  { display: 'Contact', path: '/contact' },
-  { display: 'Post', path: '/posts' }
+  { display: 'Shop', path: '/catalog' },
+  { display: 'Deals', path: '/deals', page: 'deals' },
+  { display: 'Blog', path: '/posts', page: 'posts' },
+  { display: 'Contact', path: '/contact', page: 'contact' }
 ]
 
 export default function Header() {
   const router = useRouter()
-  const { user } = useAuth();
-const [open, setOpen] = useState(false);
+  const { user } = useAuth()
   const cartItems = useSelector((state) => state.cartItems.value)
-  const pathname = usePathname()
-  const activeNav = mainNav.findIndex((e) => e.path === pathname)
+  const categories = useSelector((state) => state.categories.items)
+  const pages = useSelector((state) => state.settings.values.pages)
 
-  const headerRef = useRef(null)
-  const menuLeft = useRef(null)
+  const aisles = visibleCategories(categories)
+  // A page switched off in the dashboard loses its link here too.
+  const nav = mainNav.filter((item) => !item.page || pages?.[item.page] !== false)
+
+  const [term, setTerm] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef(null)
+
+  // Basket count is units, not lines — "3" should mean three things to carry.
+  const cartCount = cartItems.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0)
+
+  // Close the drawer whenever the route changes, or it hangs over the new page.
+  useEffect(() => {
+    setMenuOpen(false)
+    setAccountOpen(false)
+  }, [router.asPath])
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (document.body.scrollTop > 80 || document.documentElement.scrollTop > 80) {
-        headerRef.current?.classList.add('shrink')
-      } else {
-        headerRef.current?.classList.remove('shrink')
-      }
+    const onClickAway = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) setAccountOpen(false)
     }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    document.addEventListener('mousedown', onClickAway)
+    return () => document.removeEventListener('mousedown', onClickAway)
   }, [])
 
-  const menuToggle = () => menuLeft.current.classList.toggle('active')
-
+  const submitSearch = (e) => {
+    e.preventDefault()
+    router.push(term.trim() ? `/catalog?q=${encodeURIComponent(term.trim())}` : '/catalog')
+  }
 
   const handleLogout = async () => {
-  try {
-    await signOut(auth);
-    router.push("/");
-  } catch (error) {
-    console.error("Logout error:", error);
+    try {
+      await signOut(auth)
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
-};
-
 
   return (
-    <div className="header" ref={headerRef}>
-      <div className="container">
-        {/* Logo */}
-        <div className="header__logo">
-          <Link href="/" passHref>
-            <Image src={logo} alt="Logo" width={150} height={50} />
-          </Link>
-        </div>
-
-        {/* Menu */}
-        <div className="header__menu">
-          <div className="header__menu__mobile-toggle" onClick={menuToggle}>
-            <i className="bx bx-menu-alt-left"></i>
-          </div>
-
-          <div className="header__menu__left" ref={menuLeft}>
-            <div className="header__menu__left__close" onClick={menuToggle}>
-              <i className="bx bx-chevron-left"></i>
-            </div>
-            {mainNav.map((item, index) => (
-              <div
-                key={index}
-                className={`header__menu__item header__menu__left__item ${
-                  index === activeNav ? 'active' : ''
-                }`}
-                onClick={menuToggle}
-              >
-                <Link href={item.path}>{item.display}</Link>
-              </div>
-            ))}
-          </div>
-
-          {/* Right Menu */}
-            <div className="header__menu__right">
-  {/* Search Icon */}
-  <div className="header__menu__item header__menu__right__item">
-    <i
-      className="bx bx-search text-2xl"
-      style={{ cursor: "pointer" }}
-      onClick={() => router.push("/catalog?search=1")}
-    ></i>
-  </div>
-
-  {/* Cart Icon */}
-  <div className="header__menu__item header__menu__right__item">
-    <Link href="/cart">
-      <div
-        className="cart-icon-wrapper"
-        style={{ position: 'relative', display: 'inline-block' }}
-      >
-        <i className="bx bx-shopping-bag" style={{ fontSize: '24px' }}></i>
-
-        {cartItems?.length > 0 && (
-          <span
-            className="cart-badge"
-            style={{
-              position: 'absolute',
-              top: '-6px',
-              right: '-6px',
-              backgroundColor: '#f44336',
-              color: '#fff',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              borderRadius: '50%',
-              width: '20px',
-              height: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              lineHeight: '1',
-            }}
+    <header className="site-header">
+      <div className="site-header__bar">
+        <div className="container site-header__inner">
+          <button
+            type="button"
+            className="site-header__burger"
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
           >
-            {cartItems.length}
-          </span>
-        )}
-      </div>
-    </Link>
-  </div>
+            <i className="bx bx-menu"></i>
+          </button>
 
-  {/* User Icon */}
-  <div className="header__menu__item header__menu__right__item">
-      {/* User Section */}
-    <div className="header__menu__item header__menu__right__item">
-      {user ? (
-        <div style={{ position: "relative" }}>
-          <div
-            onClick={() => setOpen(!open)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-            }}
-          >
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="User"
-                style={{
-                  width: "25px",
-                  height: "25px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <i className="bx bx-user-circle" style={{ fontSize: "24px" }}></i>
-            )}
-            <span
-              style={{
-                fontWeight: 500,
-                fontSize: "15px",   // 👈 reduced
-              }}
-            >
-              {user.displayName}
+          <Link href="/" className="brand">
+            <span className="brand__mark">
+              <i className="bx bx-basket"></i>
             </span>
+            <span className="brand__text">
+              <strong>Leveldo</strong>
+              <small>grocery</small>
+            </span>
+          </Link>
+
+          <form className="site-search" onSubmit={submitSearch} role="search">
+            <i className="bx bx-search"></i>
+            <input
+              type="search"
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder="Search for milk, bananas, bread…"
+              aria-label="Search groceries"
+            />
+            <button type="submit">Search</button>
+          </form>
+
+          <nav className="site-header__links">
+            {nav.slice(1).map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={router.pathname === item.path ? 'is-active' : ''}
+              >
+                {item.display}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="site-header__actions">
+            <Link href="/catalog?search=1" className="site-header__icon site-header__icon--search" aria-label="Search">
+              <i className="bx bx-search"></i>
+            </Link>
+
+            <div className="site-header__account" ref={accountRef}>
+              {user ? (
+                <>
+                  <button
+                    type="button"
+                    className="site-header__icon"
+                    onClick={() => setAccountOpen((v) => !v)}
+                    aria-label="Account menu"
+                  >
+                    {user.photoURL ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.photoURL} alt="" className="site-header__avatar" />
+                    ) : (
+                      <i className="bx bx-user-circle"></i>
+                    )}
+                    <span className="site-header__icon__label">
+                      {(user.displayName || user.email || '').split(' ')[0]}
+                    </span>
+                  </button>
+
+                  {accountOpen && (
+                    <div className="account-menu">
+                      {isAdmin(user) && <Link href="/dashboard">Dashboard</Link>}
+                      <Link href="/posts">Blog</Link>
+                      <button type="button" onClick={handleLogout}>Log out</button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link href="/login" className="site-header__icon" aria-label="Sign in">
+                  <i className="bx bx-user"></i>
+                  <span className="site-header__icon__label">Sign in</span>
+                </Link>
+              )}
+            </div>
+
+            <Link href="/cart" className="site-header__cart" aria-label="Basket">
+              <i className="bx bx-shopping-bag"></i>
+              {cartCount > 0 && <span className="site-header__cart__badge">{cartCount}</span>}
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* mobile drawer */}
+      <div className={`site-drawer ${menuOpen ? 'is-open' : ''}`}>
+        <div className="site-drawer__scrim" onClick={() => setMenuOpen(false)} />
+        <div className="site-drawer__panel">
+          <div className="site-drawer__head">
+            <span className="brand__text">
+              <strong>Leveldo</strong>
+              <small>grocery</small>
+            </span>
+            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+              <i className="bx bx-x"></i>
+            </button>
           </div>
 
-          {open && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "45px",
-                background: "#fff",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-                borderRadius: "8px",
-                padding: "10px",
-                minWidth: "150px",
-                zIndex: 1000,
-              }}
-            >
-              <div
-                style={{
-                  padding: "8px 10px",
-                  cursor: "pointer",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                }}
-                onClick={() => {
-                  setOpen(false);
-                  router.push("/admin/orders");
-                }}
-              >
-                Admin
-              </div>
+          <nav className="site-drawer__nav">
+            {nav.map((item) => (
+              <Link key={item.path} href={item.path} className={router.pathname === item.path ? 'is-active' : ''}>
+                {item.display}
+              </Link>
+            ))}
+          </nav>
 
-              <div
-                style={{
-                  padding: "8px 10px",
-                  cursor: "pointer",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  color: "#f44336",
-                }}
-                onClick={handleLogout}
-              >
-                Logout
-              </div>
-            </div>
+          {aisles.length > 0 && (
+            <>
+              <p className="site-drawer__label">Aisles</p>
+              <nav className="site-drawer__aisles">
+                {aisles.map((c) => (
+                  <Link key={c.slug} href={`/catalog?category=${c.slug}`}>
+                    <span className="aisle-bar__dot" style={{ backgroundColor: c.accent }} />
+                    {c.name}
+                  </Link>
+                ))}
+              </nav>
+            </>
           )}
         </div>
-      ) : (
-        <i
-          className="bx bx-user text-2xl"
-          style={{ cursor: "pointer" }}
-          onClick={() => router.push("/login")}
-        ></i>
-      )}
-    </div>
-  </div>
-</div>
-
-
-        </div>
       </div>
-    </div>
+    </header>
   )
 }

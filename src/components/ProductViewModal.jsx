@@ -50,13 +50,17 @@ const ProductViewModal = () => {
     <div className="product-view__modal active">
       <div className="product-view__modal__content" ref={modalRef}>
         {loading && <p>Loading product...</p>}
-        {!loading && product && <ProductView product={product} />}
+        {!loading && product && <ProductView product={product} isModal />}
         {!loading && product === null && <p>Product not found!</p>}
 
         <div className="product-view__modal__content__close">
-          <Button size="sma" onClick={() => dispatch(remove())}>
-            Close
-          </Button>
+          <button
+            className="modal-close"
+            aria-label="Close"
+            onClick={() => dispatch(remove())}
+          >
+            <i className="bx bx-x"></i>
+          </button>
         </div>
       </div>
     </div>

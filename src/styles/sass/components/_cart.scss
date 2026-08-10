@@ -14,9 +14,11 @@
     }
 
     &__info {
-        padding: 20px;
+        padding: 26px;
         margin-right: 30px;
         margin-top: 30px;
+        background: $main-bg;
+        border-radius: $radius-lg;
         box-shadow: $box-shadow;
         position: sticky;
         top: calc(#{$header-shrink-height} + 20px);
@@ -62,58 +64,126 @@
     ========================== */
 
     &__item {
-        @include flex(center, flex-start);
-        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 16px;
+        margin-bottom: 16px;
         width: 100%;
+        background: $main-bg;
+        border-radius: $radius-lg;
+        box-shadow: $box-shadow;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 28px 50px -28px rgba($shadow-color, 0.5);
+        }
 
         &__image {
-            margin-right: 20px;
             flex-shrink: 0;
+            width: 104px;
+            height: 104px;
+            overflow: hidden;
+            background: none;
+            @include flex(center, center);
 
             img {
-                height: 150px;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
 
-                @include mobile {
-                    height: 80px; // only size fix
-                }
+            @include mobile {
+                width: 76px;
+                height: 76px;
             }
         }
 
         &__info {
             @include flex(center, space-between);
             flex-grow: 1;
-            gap: 12px;
+            gap: 16px;
 
-            /* IMPORTANT: keep row layout on mobile */
             @include mobile {
                 flex-direction: row;
                 align-items: center;
+                gap: 10px;
             }
 
             &__name {
-                width: 40%;
+                flex: 1;
+                min-width: 0;
 
-                @include mobile {
-                    width: auto;
-                    flex: 1;
+                a {
+                    color: $txt-main-color;
+                    font-size: 1.2rem;
+                    font-weight: 600;
+                    line-height: 1.4;
+                    transition: color 0.2s ease;
+
+                    &:hover {
+                        color: $main-color;
+                    }
                 }
             }
 
-            &__name,
             &__price {
-                font-size: 1.25rem;
+                font-size: 1.35rem;
+                font-weight: 700;
+                color: $main-color;
+                white-space: nowrap;
+            }
+
+            /* pill quantity stepper (scoped to cart only) */
+            &__quantity .product__info__item__quantity {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                background: #f2f6fc;
+                border-radius: $radius-pill;
+                padding: 4px;
+
+                &__btn {
+                    @include flex(center, center);
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    color: $main-color;
+                    cursor: pointer;
+                    transition: background 0.2s ease;
+
+                    &:hover {
+                        background: #fff;
+                    }
+                }
+
+                &__input {
+                    min-width: 28px;
+                    text-align: center;
+                    font-weight: 600;
+                    color: $txt-main-color;
+                }
             }
         }
 
         &__del {
-            font-size: 1.5rem;
             flex-shrink: 0;
 
             i {
+                @include flex(center, center);
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                background: rgba($accent-color, 0.12);
+                color: $accent-color;
+                font-size: 1.25rem;
                 cursor: pointer;
+                transition: background 0.2s ease, transform 0.2s ease;
 
                 &:hover {
-                    color: rgb(248, 110, 110);
+                    background: rgba($accent-color, 0.2);
+                    transform: scale(1.06);
                 }
             }
         }
@@ -312,21 +382,21 @@
     gap: 1rem;
 
     button {
-        padding: 0.85rem;
+        padding: 12px 24px;
         border-radius: 12px;
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 14px;
+        line-height: 1;
+        border: 1px solid transparent;
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
         &.primary {
             background: $btn-main-bg;
             color: $btn-main-color;
-            box-shadow: 0 6px 16px rgba($main-color, 0.35);
 
             &:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 10px 24px rgba($main-color, 0.4);
+                background: $main-dark;
             }
         }
 

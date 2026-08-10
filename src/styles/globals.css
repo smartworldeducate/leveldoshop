@@ -1,6 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* BEAMS 2.0 mono family for admin numerals (graceful fallback if offline) */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* Tailwind CSS v4.
+   The old `@tailwind base/components/utilities` directives are v3 syntax and
+   generate nothing on the v4 engine, so we import the pieces directly.
+   Utilities are imported WITHOUT a layer on purpose: sass/_base.scss defines an
+   unlayered `* { padding:0; margin:0 }` reset, and an unlayered rule beats any
+   @layer rule regardless of specificity. Keeping utilities unlayered lets them
+   win over that reset by normal specificity (e.g. `.pt-12` > `*`). */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+/* v4 does not read tailwind.config.js automatically; declare sources explicitly. */
+@source "../pages";
+@source "../components";
+@source "../app";
+
+/* The storefront pins html to 13px (sass/_base.scss). The dashboard wants a
+   standard 16px root so Tailwind's rem-based spacing matches its design scale.
+   `html:has(.dashboard-shell)` (0-1-1) outweighs the bare `html` rule (0-0-1)
+   and only applies while a dashboard page is mounted. */
+html:has(.dashboard-shell) {
+  font-size: 16px;
+}
 
 /* Add global styles if needed */
 body {

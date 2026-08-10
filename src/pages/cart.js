@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 
 import CartItem from '../components/CartItem'
 import Button from '../components/Button'
-import numberWithCommas from '../utils/numberWithCommas'
+import { formatMoney } from '../data/grocery'
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebaseClient'
 
@@ -144,7 +144,7 @@ export default function Cart() {
             <p>You have {totalProducts} items in your cart</p>
             <div className="cart__info__txt__price">
               <span>Total:</span>
-              <span>{numberWithCommas(totalPrice)}</span>
+              <span>{formatMoney(totalPrice)}</span>
             </div>
           </div>
 
@@ -223,12 +223,12 @@ export default function Cart() {
                 <div key={index} className="cart-modal-summary-item">
                   <span>{item.product?.title}</span>
                   <span>
-                    {item.quantity} x {numberWithCommas(item.price)}
+                    {item.quantity} x {formatMoney(item.price)}
                   </span>
                 </div>
               ))}
               <div className="cart-modal-summary-total">
-                <strong>Total:</strong> {numberWithCommas(totalPrice)}
+                <strong>Total:</strong> {formatMoney(totalPrice)}
               </div>
             </div>
 

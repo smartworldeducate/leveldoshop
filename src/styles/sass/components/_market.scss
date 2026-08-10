@@ -1,0 +1,1649 @@
+/* =========================================================
+   MARKET LAYOUT — hero, section heads, collections, rails,
+   promise strip and the promo blocks. Everything degrades to
+   type, colour and line icons when the shop has no
+   photography yet; nothing here waits on a photo shoot.
+========================================================= */
+
+.home-block {
+    margin-bottom: 56px;
+
+    @include tablet {
+        margin-bottom: 44px;
+    }
+
+    @include mobile {
+        margin-bottom: 34px;
+    }
+
+    // Lifts a block onto the edge of the one above it. The hero reserves the
+    // room for this in its own bottom padding, so the overlap never eats copy.
+    &--overlap {
+        position: relative;
+        z-index: 2;
+        margin-top: -46px;
+
+        @include tablet {
+            margin-top: -34px;
+        }
+
+        @include mobile {
+            margin-top: -26px;
+        }
+    }
+}
+
+/* ---------- editorial hero ---------- */
+.hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 30px;
+    align-items: center;
+    overflow: hidden;
+    // The lower padding is deliberately deep: the promise strip rides up into
+    // it, and without the room it would sit on top of the slide numbers.
+    padding: 62px 60px 96px;
+    border-radius: $radius-lg;
+    background:
+        radial-gradient(760px 460px at 84% 4%, rgba($main-light, 0.34), transparent 62%),
+        radial-gradient(560px 420px at -6% 100%, rgba(#22c55e, 0.16), transparent 60%),
+        linear-gradient(140deg, #f8fbff 0%, #eaf0fb 100%);
+    border: 1px solid rgba($main-color, 0.1);
+
+    @include tablet {
+        grid-template-columns: 1fr;
+        gap: 26px;
+        padding: 40px 30px 78px;
+    }
+
+    @include mobile {
+        padding: 30px 20px 64px;
+    }
+
+    &__copy {
+        position: relative;
+        z-index: 2;
+        animation: hero-rise 0.55s ease both;
+    }
+
+    &__kicker {
+        @include flex(center, flex-start);
+        display: inline-flex;
+        gap: 9px;
+        color: $main-color;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+
+        // While same-day ordering is still open the kicker becomes a live
+        // countdown, so it earns a pill and a pulse.
+        &.is-live {
+            padding: 7px 14px 7px 12px;
+            border-radius: $radius-pill;
+            background-color: rgba(#22c55e, 0.12);
+            color: #15803d;
+            letter-spacing: 0.12em;
+        }
+    }
+
+    &__pulse {
+        position: relative;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #22c55e;
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background-color: #22c55e;
+            animation: hero-pulse 2s ease-out infinite;
+        }
+    }
+
+    // The one place the serif earns its keep: an offer headline that has to
+    // carry the whole panel on its own.
+    &__display {
+        margin-top: 14px;
+        font-family: $font-display;
+        font-size: 4.6rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: $txt-main-color;
+
+        @include tablet {
+            font-size: 3.6rem;
+        }
+
+        @include mobile {
+            font-size: 2.9rem;
+        }
+    }
+
+    &__script {
+        margin-top: 10px;
+        font-family: $font-display;
+        font-style: italic;
+        font-size: 1.65rem;
+        font-weight: 500;
+        line-height: 1.25;
+        color: $main-dark;
+
+        @include mobile {
+            font-size: 1.3rem;
+        }
+    }
+
+    &__lead {
+        max-width: 430px;
+        margin-top: 16px;
+        color: $txt-second-color;
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+
+    &__actions {
+        @include flex(center, flex-start);
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    &__ghost {
+        @include flex(center, center);
+        height: 50px;
+        padding: 0 24px;
+        border-radius: $radius-pill;
+        background-color: rgba(#fff, 0.7);
+        border: 1px solid rgba($main-color, 0.18);
+        color: $txt-main-color;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: border-color 0.2s ease, color 0.2s ease;
+
+        &:hover {
+            border-color: rgba($main-color, 0.45);
+            color: $main-color;
+        }
+    }
+
+    &__cta {
+        @include flex(center, center);
+        display: inline-flex;
+        gap: 8px;
+        height: 50px;
+        padding: 0 30px;
+        border-radius: $radius-pill;
+        background: $grad-main;
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 20px 36px -18px rgba($shadow-color, 0.9);
+        transition: transform 0.2s ease, filter 0.2s ease;
+
+        i {
+            font-size: 1.2rem;
+            transition: transform 0.2s ease;
+        }
+
+        &:hover {
+            color: #fff;
+            filter: brightness(1.07);
+            transform: translateY(-2px);
+
+            i {
+                transform: translateX(4px);
+            }
+        }
+    }
+
+    /* numbered slides — each dot doubles as an autoplay progress bar */
+    &__controls {
+        @include flex(center, space-between);
+        gap: 20px;
+        margin-top: 36px;
+        padding-top: 22px;
+        border-top: 1px solid rgba($main-color, 0.12);
+        max-width: 460px;
+
+        @include mobile {
+            margin-top: 24px;
+        }
+    }
+
+    &__dots {
+        @include flex(center, flex-start);
+        gap: 18px;
+    }
+
+    &__dot {
+        @include flex(center, flex-start);
+        gap: 10px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: $txt-second-color;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+        transition: color 0.2s ease;
+
+        &:hover {
+            color: $main-color;
+        }
+
+        &__track {
+            display: block;
+            width: 0;
+            height: 2px;
+            border-radius: $radius-pill;
+            background-color: rgba($main-color, 0.18);
+            overflow: hidden;
+            transition: width 0.35s ease;
+        }
+
+        &__fill {
+            display: block;
+            width: 0;
+            height: 100%;
+            background-color: $main-color;
+        }
+
+        // Only the active slide shows its track, so the row stays quiet.
+        &.is-active {
+            color: $txt-main-color;
+
+            .hero__dot__track {
+                width: 46px;
+            }
+
+            .hero__dot__fill {
+                animation-name: hero-progress;
+                animation-timing-function: linear;
+                animation-fill-mode: forwards;
+            }
+        }
+    }
+
+    &__arrows {
+        @include flex(center, flex-end);
+        gap: 8px;
+
+        button {
+            @include flex(center, center);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid rgba($main-color, 0.18);
+            background-color: rgba(#fff, 0.8);
+            color: $txt-main-color;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+            &:hover {
+                background-color: $main-color;
+                border-color: $main-color;
+                color: #fff;
+            }
+        }
+    }
+
+    /* ---- right-hand stage ---- */
+    &__art {
+        position: relative;
+        min-height: 400px;
+        animation: hero-fade 0.6s ease both;
+
+        @include tablet {
+            min-height: 300px;
+        }
+
+        @include mobile {
+            min-height: 240px;
+        }
+
+        // Soft disc behind the produce, echoing the shop-window backdrop.
+        &__disc {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 380px;
+            height: 380px;
+            transform: translate(-50%, -50%)
+                translate3d(calc(var(--px, 0) * 8px), calc(var(--py, 0) * 8px), 0);
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(#fff, 0.9), transparent 60%),
+                linear-gradient(150deg, rgba($main-light, 0.34), rgba($main-color, 0.18));
+
+            @include tablet {
+                width: 290px;
+                height: 290px;
+            }
+
+            @include mobile {
+                width: 225px;
+                height: 225px;
+            }
+        }
+
+        &__main {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%)
+                translate3d(calc(var(--px, 0) * 16px), calc(var(--py, 0) * 16px), 0);
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: rgba(#fff, 0.72);
+            box-shadow: 0 40px 70px -34px rgba($shadow-color, 0.85);
+            transition: transform 0.35s ease;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            &:hover {
+                transform: translate(-50%, -50%) scale(1.03);
+            }
+
+            // The stage sets --px/--py from the pointer; the disc and picks
+            // move by different amounts, which is what makes it read as depth.
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+            @include tablet {
+                width: 230px;
+                height: 230px;
+            }
+
+            @include mobile {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        // Two smaller picks orbiting the main shot; hidden on phones, where
+        // they would overlap the headline instead of framing it.
+        &__chip {
+            position: absolute;
+            width: 104px;
+            height: 104px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: #fff;
+            border: 4px solid #fff;
+            box-shadow: 0 24px 44px -26px rgba($shadow-color, 0.8);
+            transition: transform 0.3s ease;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            &:hover {
+                transform: translateY(-4px);
+            }
+
+            &--1 {
+                top: 8%;
+                right: 6%;
+            }
+
+            &--2 {
+                bottom: 10%;
+                left: 4%;
+            }
+
+            @include tablet {
+                width: 84px;
+                height: 84px;
+            }
+
+            @include mobile {
+                display: none;
+            }
+        }
+
+        // No photography yet: instead of a stand-in image, the panel shows the
+        // thing actually being sold — a priced basket, drawn in CSS.
+        .hero__panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(370px, 100%);
+            transform: translate(-50%, -50%)
+                translate3d(calc(var(--px, 0) * 14px), calc(var(--py, 0) * 14px), 0);
+            padding: 22px 24px;
+            border-radius: $radius-lg;
+            background-color: rgba(#fff, 0.96);
+            border: 1px solid rgba($main-color, 0.09);
+            box-shadow: 0 44px 80px -40px rgba($shadow-color, 0.85);
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+            @include tablet {
+                position: relative;
+                top: auto;
+                left: auto;
+                transform: none;
+                width: 100%;
+                max-width: 420px;
+                margin: 0 auto;
+            }
+
+            &__head {
+                @include flex(center, space-between);
+                gap: 14px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid rgba($main-color, 0.1);
+
+                span {
+                    display: flex;
+                    flex-direction: column;
+                    line-height: 1.35;
+                }
+
+                strong {
+                    color: $txt-main-color;
+                    font-size: 0.98rem;
+                    font-weight: 700;
+                }
+
+                small {
+                    color: $txt-second-color;
+                    font-size: 0.76rem;
+                }
+
+                i {
+                    @include flex(center, center);
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 12px;
+                    background-color: rgba($main-color, 0.09);
+                    color: $main-color;
+                    font-size: 1.3rem;
+                }
+            }
+
+            &__list {
+                display: grid;
+                gap: 2px;
+                margin: 8px 0;
+                list-style: none;
+
+                li {
+                    @include flex(center, flex-start);
+                    gap: 12px;
+                    padding: 9px 0;
+                }
+            }
+
+            // A ticked line, not a photograph — reads as "picked" without one.
+            &__mark {
+                position: relative;
+                flex-shrink: 0;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background-color: rgba(#22c55e, 0.14);
+
+                &::after {
+                    content: "";
+                    position: absolute;
+                    top: 5px;
+                    left: 7px;
+                    width: 5px;
+                    height: 9px;
+                    border: solid #16a34a;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(42deg);
+                }
+            }
+
+            &__name {
+                display: flex;
+                flex: 1;
+                min-width: 0;
+                flex-direction: column;
+                line-height: 1.3;
+
+                strong {
+                    color: $txt-main-color;
+                    font-size: 0.86rem;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                small {
+                    color: $txt-second-color;
+                    font-size: 0.72rem;
+                }
+            }
+
+            &__price {
+                flex-shrink: 0;
+                color: $txt-main-color;
+                font-size: 0.86rem;
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+            }
+
+            &__foot {
+                @include flex(center, space-between);
+                padding-top: 14px;
+                border-top: 1px dashed rgba($main-color, 0.2);
+                color: $txt-second-color;
+                font-size: 0.82rem;
+
+                strong {
+                    color: $main-color;
+                    font-size: 1.15rem;
+                    font-weight: 800;
+                    font-variant-numeric: tabular-nums;
+                }
+            }
+        }
+
+        // Two small cards pinned to the panel's corners, each drifting a little
+        // further than the panel so the group reads as layered.
+        .hero__badge {
+            position: absolute;
+            @include flex(center, flex-start);
+            gap: 10px;
+            padding: 10px 16px 10px 12px;
+            border-radius: $radius-pill;
+            background-color: #fff;
+            box-shadow: 0 26px 48px -26px rgba($shadow-color, 0.8);
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+            i {
+                @include flex(center, center);
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                font-size: 1.15rem;
+            }
+
+            span {
+                display: flex;
+                flex-direction: column;
+                line-height: 1.3;
+            }
+
+            strong {
+                color: $txt-main-color;
+                font-size: 0.8rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            small {
+                color: $txt-second-color;
+                font-size: 0.7rem;
+                white-space: nowrap;
+            }
+
+            &--eta {
+                top: -24px;
+                right: -46px;
+                transform: translate3d(calc(var(--px, 0) * 26px), calc(var(--py, 0) * 26px), 0);
+
+                i {
+                    background-color: rgba(#22c55e, 0.14);
+                    color: #15803d;
+                }
+            }
+
+            // Anchored to the panel, not the stage, so it always hangs off the
+            // corner instead of drifting over the subtotal line.
+            &--trust {
+                bottom: -40px;
+                left: -26px;
+                transform: translate3d(calc(var(--px, 0) * 20px), calc(var(--py, 0) * 20px), 0);
+
+                i {
+                    background-color: rgba($main-color, 0.1);
+                    color: $main-color;
+                }
+            }
+
+            // Below the desktop layout the panel is in normal flow, so pinning
+            // the badges to the stage corners would strand them.
+            @include tablet {
+                display: none;
+            }
+        }
+    }
+}
+
+@keyframes hero-rise {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+}
+
+@keyframes hero-fade {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@keyframes hero-progress {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes hero-pulse {
+    from {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(2.6);
+    }
+}
+
+/* ---------- section heading ---------- */
+.section-head {
+    @include flex(flex-end, space-between);
+    gap: 16px;
+    margin-bottom: 20px;
+
+    &__kicker {
+        display: block;
+        margin-bottom: 7px;
+        color: $main-color;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+
+    &__title {
+        font-family: $font-display;
+        color: $txt-main-color;
+        font-size: 1.95rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+
+        @include mobile {
+            font-size: 1.5rem;
+        }
+    }
+
+    &__note {
+        margin-top: 5px;
+        color: $txt-second-color;
+        font-size: 0.82rem;
+    }
+
+    &__link {
+        @include flex(center, center);
+        gap: 6px;
+        flex-shrink: 0;
+        color: $txt-main-color;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+
+        i {
+            font-size: 1.15rem;
+            color: $main-color;
+            transition: transform 0.2s ease;
+        }
+
+        &:hover {
+            color: $main-color;
+
+            i {
+                transform: translateX(4px);
+            }
+        }
+    }
+}
+
+/* ---------- collection cards ---------- */
+.collection-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px;
+
+    @include tablet {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    @include mobile {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+}
+
+.collection-card {
+    display: block;
+    padding-bottom: 18px;
+    border-radius: $radius;
+    background-color: $main-bg;
+    border: 1px solid rgba($main-color, 0.07);
+    overflow: hidden;
+    text-align: center;
+    transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+        border-color: rgba($main-color, 0.2);
+        box-shadow: 0 28px 50px -30px rgba($shadow-color, 0.6);
+
+        .collection-card__media img {
+            transform: scale(1.06);
+        }
+
+        .collection-card__glyph i {
+            transform: scale(1.08);
+        }
+
+        .collection-card__go {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    // Until an aisle has a photographed product it keeps its colour, but pale:
+    // ten saturated panels in a row shout louder than the products do.
+    &.no-photo {
+        .collection-card__media {
+            background:
+                linear-gradient(160deg, rgba(#fff, 0.88), rgba(#fff, 0.74)),
+                var(--aisle-accent, #{$main-color});
+        }
+
+        .collection-card__initial {
+            color: var(--aisle-accent, #{$main-color});
+            opacity: 0.5;
+        }
+    }
+
+    &.is-empty .collection-card__name {
+        color: $txt-second-color;
+    }
+
+    &__media {
+        display: block;
+        position: relative;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        // Falls back to the aisle's own colour when there is no photograph.
+        background:
+            linear-gradient(160deg, rgba(#fff, 0.26), rgba(#1e2033, 0.12) 92%),
+            var(--aisle-accent, #{$main-color});
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.45s ease;
+        }
+
+        @include tablet {
+            aspect-ratio: 4 / 5;
+        }
+
+        @include mobile {
+            aspect-ratio: 1 / 1;
+        }
+    }
+
+    // Stand-in while the aisle has no photograph: its own icon, not a letter.
+    &__glyph {
+        position: absolute;
+        inset: 0;
+        @include flex(center, center);
+
+        i {
+            @include flex(center, center);
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            background-color: rgba(#fff, 0.75);
+            color: var(--aisle-accent, #{$main-color});
+            font-size: 1.9rem;
+            box-shadow: 0 18px 34px -22px rgba($shadow-color, 0.7);
+            transition: transform 0.28s ease;
+        }
+    }
+
+    &__count {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 5px 11px;
+        border-radius: $radius-pill;
+        background-color: rgba(#fff, 0.92);
+        color: $txt-main-color;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    // Slides in on hover — the card says where it goes before it is clicked.
+    &__go {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        @include flex(center, center);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: $main-color;
+        color: #fff;
+        font-size: 1.25rem;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+
+    &__name {
+        display: block;
+        margin-top: 14px;
+        padding: 0 10px;
+        color: $txt-main-color;
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    &__from {
+        display: block;
+        margin-top: 4px;
+        padding: 0 10px;
+        color: $txt-second-color;
+        font-size: 0.75rem;
+    }
+}
+
+/* ---------- offer mosaic ---------- */
+.promo-mosaic {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, 195px);
+    gap: 18px;
+
+    @include tablet {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(2, 190px);
+        gap: 14px;
+    }
+
+    @include mobile {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, 200px);
+        gap: 10px;
+    }
+}
+
+.promo-tile {
+    position: relative;
+    @include flex(flex-end, flex-start);
+    padding: 26px 28px;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    // Quiet tinted panel behind the photograph, varied per tile so the mosaic
+    // reads as four surfaces rather than one flat block.
+    --tile-tint: #{mix($main-color, #fff, 13%)};
+    background-color: var(--tile-tint);
+    isolation: isolate;
+    transition: transform 0.24s ease, box-shadow 0.24s ease;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 30px 54px -30px rgba($shadow-color, 0.55);
+
+        .promo-tile__media img {
+            transform: scale(1.05);
+        }
+
+        .promo-tile__cta i {
+            transform: translateX(4px);
+        }
+    }
+
+    @include mobile {
+        padding: 20px;
+    }
+
+    /* placement — explicit, so a missing tile never reflows the mosaic */
+    &--tall {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
+
+    &--wide {
+        grid-column: 2;
+        grid-row: 1;
+        --tile-tint: #f4efe9; // warm sand — the one break from the blues
+
+        // A short, wide tile has room beside the copy rather than above it.
+        .promo-tile__media {
+            inset: 8% 4% 8% 46%;
+        }
+    }
+
+    &--dark {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    &--right {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+        --tile-tint: #{mix(#22c55e, #fff, 9%)}; // produce green
+    }
+
+    // Two even columns on smaller screens: nothing spans, so no cell is ever
+    // left as a hole in the grid.
+    @include tablet {
+        &--tall,
+        &--wide,
+        &--dark,
+        &--right {
+            grid-column: auto;
+            grid-row: auto;
+        }
+
+        .promo-tile__media,
+        &--wide .promo-tile__media {
+            inset: 6% 4% 30% 22%;
+        }
+    }
+
+    &__media {
+        position: absolute;
+        // Photo sits in the upper half; the copy owns the bottom-left corner.
+        inset: 6% 0 30% 22%;
+        z-index: -2;
+        // The blend belongs on the group, not the <img>: this element already
+        // makes a stacking context, so a blend on the image inside it would
+        // have nothing to mix with.
+        mix-blend-mode: multiply;
+
+        img {
+            width: 100%;
+            height: 100%;
+            // `contain` keeps a studio pack shot whole; multiply drops its white
+            // backdrop into the tint so the tile looks styled, not pasted.
+            object-fit: contain;
+            object-position: center;
+            transition: transform 0.5s ease;
+        }
+    }
+
+    // No photograph: an oversized, faint glyph anchored to the far corner.
+    &__glyph {
+        position: absolute;
+        right: -10px;
+        bottom: -18px;
+        z-index: -2;
+        line-height: 0;
+
+        i {
+            color: rgba($main-color, 0.16);
+            font-size: 11rem;
+        }
+
+        @include mobile {
+            i {
+                font-size: 7rem;
+            }
+        }
+    }
+
+    // Scrim: the copy side stays readable, the photo side stays visible.
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: linear-gradient(
+            100deg,
+            var(--tile-tint) 0%,
+            var(--tile-tint) 34%,
+            transparent 76%
+        );
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        max-width: 62%;
+
+        @include mobile {
+            max-width: 72%;
+        }
+    }
+
+    &__kicker {
+        font-family: $font-display;
+        font-style: italic;
+        font-size: 0.92rem;
+        color: $main-color;
+    }
+
+    &__title {
+        margin-top: 6px;
+        color: $txt-main-color;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        line-height: 1.25;
+    }
+
+    &__headline {
+        @include flex(baseline, flex-start);
+        gap: 8px;
+        margin-top: 2px;
+        font-family: $font-display;
+        font-size: 2.6rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: $txt-main-color;
+
+        small {
+            font-family: "Roboto", sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: $txt-second-color;
+        }
+
+        @include mobile {
+            font-size: 2rem;
+        }
+    }
+
+    &__cta {
+        @include flex(center, center);
+        display: inline-flex;
+        gap: 6px;
+        margin-top: 16px;
+        padding: 9px 18px;
+        border-radius: $radius-pill;
+        background-color: #fff;
+        border: 1px solid rgba($main-color, 0.16);
+        color: $main-color;
+        font-size: 0.78rem;
+        font-weight: 700;
+
+        i {
+            font-size: 1.05rem;
+            transition: transform 0.2s ease;
+        }
+    }
+
+    /* the one dark tile — the mosaic needs a full stop */
+    &--dark {
+        background-color: $beams-navy;
+
+        // Multiplying a photo into navy would bury it, so here it sits in its
+        // own inset frame on the right instead of bleeding to the edges.
+        .promo-tile__media {
+            left: auto;
+            right: 16px;
+            top: 16px;
+            bottom: 16px;
+            width: 40%;
+            border-radius: 16px;
+            overflow: hidden;
+            background-color: #fff;
+            mix-blend-mode: normal;
+
+            img {
+                object-fit: cover;
+                object-position: center;
+            }
+        }
+
+        &::before {
+            background: linear-gradient(
+                100deg,
+                rgba($beams-navy-deep, 0.96) 0%,
+                rgba($beams-navy-deep, 0.86) 42%,
+                rgba($beams-navy-deep, 0.2) 80%,
+                transparent 100%
+            );
+        }
+
+        .promo-tile__kicker {
+            color: rgba(#fff, 0.72);
+        }
+
+        .promo-tile__glyph i {
+            color: rgba(#fff, 0.1);
+        }
+
+        .promo-tile__title,
+        .promo-tile__headline {
+            color: #fff;
+        }
+
+        .promo-tile__cta {
+            background-color: #fff;
+            border-color: transparent;
+            color: $beams-navy;
+        }
+    }
+}
+
+/* ---------- filter tabs ---------- */
+.filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+
+    &__tab {
+        padding: 9px 18px;
+        border-radius: $radius-pill;
+        border: 1px solid rgba($main-color, 0.14);
+        background-color: rgba(#fff, 0.7);
+        color: $txt-second-color;
+        font-family: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+        &:hover {
+            color: $main-color;
+            border-color: rgba($main-color, 0.35);
+        }
+
+        &.is-active {
+            background: $grad-main;
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 14px 26px -16px rgba($shadow-color, 0.9);
+        }
+    }
+}
+
+/* ---------- horizontal product rail ---------- */
+.p-rail-wrap {
+    position: relative;
+
+    // Arrows overlay the rail edges rather than taking a row of their own; on
+    // touch screens the rail is swiped, so they only appear with a fine pointer.
+    &:hover .p-rail__nav button {
+        opacity: 1;
+    }
+}
+
+.p-rail__nav {
+    @media (pointer: coarse) {
+        display: none;
+    }
+
+    button {
+        position: absolute;
+        top: 42%;
+        z-index: 3;
+        @include flex(center, center);
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid rgba($main-color, 0.1);
+        background-color: #fff;
+        color: $txt-main-color;
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0;
+        box-shadow: 0 18px 34px -18px rgba($shadow-color, 0.8);
+        transition: opacity 0.22s ease, background 0.2s ease, color 0.2s ease;
+
+        &:first-child {
+            left: -14px;
+        }
+
+        &:last-child {
+            right: -14px;
+        }
+
+        &:hover:not(:disabled) {
+            background-color: $main-color;
+            color: #fff;
+        }
+
+        &:disabled {
+            cursor: default;
+            color: $txt-second-color;
+            opacity: 0 !important;
+        }
+
+        &:focus-visible {
+            opacity: 1;
+        }
+    }
+}
+
+.p-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 1fr);
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+
+    @include mobile {
+        grid-auto-columns: minmax(155px, 1fr);
+        gap: 12px;
+    }
+
+    &__item {
+        scroll-snap-align: start;
+    }
+
+    &::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        border-radius: $radius-pill;
+        background-color: rgba($main-color, 0.22);
+    }
+}
+
+/* ---------- promise strip ---------- */
+.promise-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 22px 10px;
+    border-radius: $radius;
+    background-color: $main-bg;
+    border: 1px solid rgba($main-color, 0.07);
+    box-shadow: 0 30px 60px -40px rgba($shadow-color, 0.75);
+
+    @include tablet {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 14px 6px;
+    }
+
+    @include mobile {
+        grid-template-columns: 1fr;
+        padding: 10px 6px;
+    }
+
+    &__item {
+        @include flex(center, flex-start);
+        gap: 14px;
+        padding: 8px 22px;
+        // Hairline rules between the promises, as on a shop window sign.
+        border-left: 1px solid rgba($main-color, 0.12);
+        transition: color 0.2s ease;
+
+        &:first-child {
+            border-left: 0;
+        }
+
+        @include tablet {
+            padding: 12px 16px;
+
+            &:nth-child(odd) {
+                border-left: 0;
+            }
+
+            &:nth-child(n + 3) {
+                border-top: 1px solid rgba($main-color, 0.12);
+            }
+        }
+
+        @include mobile {
+            border-left: 0;
+
+            &:nth-child(n + 2) {
+                border-top: 1px solid rgba($main-color, 0.12);
+            }
+        }
+
+        &:hover i {
+            background-color: rgba($main-color, 0.14);
+        }
+
+        i {
+            @include flex(center, center);
+            flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background-color: rgba($main-color, 0.08);
+            color: $main-color;
+            font-size: 1.45rem;
+            transition: background-color 0.2s ease;
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.35;
+            min-width: 0;
+        }
+
+        strong {
+            color: $txt-main-color;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        small {
+            color: $txt-second-color;
+            font-size: 0.76rem;
+        }
+    }
+}
+
+/* ---------- how it works ---------- */
+.steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+
+    @include tablet {
+        grid-template-columns: 1fr;
+    }
+
+    &__item {
+        position: relative;
+        padding: 30px 28px 28px;
+        border-radius: $radius;
+        background-color: $main-bg;
+        border: 1px solid rgba($main-color, 0.07);
+        overflow: hidden;
+
+        // Thin accent rule along the top edge.
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 3px;
+            background: $grad-main;
+            opacity: 0.85;
+        }
+
+        @include mobile {
+            padding: 24px 20px;
+        }
+    }
+
+    &__num {
+        position: absolute;
+        top: 22px;
+        right: 26px;
+        color: rgba($main-color, 0.12);
+        font-size: 3.2rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+    }
+
+    &__icon {
+        @include flex(center, center);
+        width: 48px;
+        height: 48px;
+        border-radius: 15px;
+        background-color: rgba($main-color, 0.09);
+        color: $main-color;
+        font-size: 1.5rem;
+    }
+
+    &__title {
+        margin-top: 16px;
+        color: $txt-main-color;
+        font-size: 1.08rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    &__body {
+        margin-top: 7px;
+        color: $txt-second-color;
+        font-size: 0.88rem;
+        line-height: 1.65;
+    }
+}
+
+/* ---------- closing invitation ---------- */
+.closer {
+    @include flex(center, space-between);
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 40px 44px;
+    border-radius: $radius-lg;
+    background:
+        radial-gradient(600px 320px at 88% 0%, rgba($main-light, 0.22), transparent 60%),
+        linear-gradient(140deg, #f7faff 0%, #eef3fc 100%);
+    border: 1px solid rgba($main-color, 0.1);
+
+    @include mobile {
+        padding: 28px 22px;
+    }
+
+    h2 {
+        color: $txt-main-color;
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+
+        @include mobile {
+            font-size: 1.4rem;
+        }
+    }
+
+    p {
+        margin-top: 6px;
+        color: $txt-second-color;
+        font-size: 0.94rem;
+    }
+
+    &__actions {
+        @include flex(center, flex-start);
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    &__primary,
+    &__ghost {
+        @include flex(center, center);
+        height: 48px;
+        padding: 0 30px;
+        border-radius: $radius-pill;
+        font-size: 0.92rem;
+        font-weight: 700;
+        transition: transform 0.2s ease, filter 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    &__primary {
+        background: $grad-main;
+        color: #fff;
+        box-shadow: 0 18px 34px -18px rgba($shadow-color, 0.9);
+
+        &:hover {
+            filter: brightness(1.07);
+        }
+    }
+
+    &__ghost {
+        background-color: rgba(#fff, 0.8);
+        border: 1px solid rgba($main-color, 0.2);
+        color: $main-color;
+    }
+}
+
+/* ---------- promo band ---------- */
+.promo-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: center;
+    gap: 24px;
+    padding: 40px 44px;
+    border-radius: $radius-lg;
+    background: $grad-hero;
+    color: #fff;
+    overflow: hidden;
+
+    @include tablet {
+        grid-template-columns: 1fr;
+        padding: 30px 26px;
+    }
+
+    &__kicker {
+        display: inline-block;
+        padding: 5px 13px;
+        border-radius: $radius-pill;
+        background-color: rgba(#fff, 0.18);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    h2 {
+        max-width: 520px;
+        margin-top: 14px;
+        font-size: 1.9rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+
+        @include mobile {
+            font-size: 1.45rem;
+        }
+    }
+
+    p {
+        max-width: 480px;
+        margin-top: 10px;
+        color: rgba(#fff, 0.82);
+        font-size: 0.92rem;
+        line-height: 1.6;
+    }
+
+    &__actions {
+        @include flex(center, flex-start);
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 22px;
+    }
+
+    &__cta {
+        display: inline-block;
+        padding: 13px 30px;
+        border-radius: $radius-pill;
+        background-color: #fff;
+        color: $main-color;
+        font-size: 0.88rem;
+        font-weight: 700;
+        transition: transform 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    &__link {
+        @include flex(center, center);
+        gap: 6px;
+        color: rgba(#fff, 0.9);
+        font-size: 0.85rem;
+        font-weight: 600;
+
+        i {
+            font-size: 1.15rem;
+            transition: transform 0.2s ease;
+        }
+
+        &:hover {
+            color: #fff;
+
+            i {
+                transform: translateX(4px);
+            }
+        }
+    }
+
+    // What membership actually gets you, stated plainly.
+    &__points {
+        display: grid;
+        gap: 14px;
+        padding-left: 28px;
+        border-left: 1px solid rgba(#fff, 0.18);
+        list-style: none;
+
+        @include tablet {
+            padding-left: 0;
+            border-left: 0;
+            padding-top: 22px;
+            border-top: 1px solid rgba(#fff, 0.18);
+        }
+
+        li {
+            @include flex(center, flex-start);
+            gap: 14px;
+        }
+
+        i {
+            @include flex(center, center);
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background-color: rgba(#fff, 0.14);
+            color: #fff;
+            font-size: 1.25rem;
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.35;
+        }
+
+        strong {
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        small {
+            color: rgba(#fff, 0.75);
+            font-size: 0.78rem;
+        }
+    }
+}
