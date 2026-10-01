@@ -7,6 +7,16 @@ export default function SearchModal({ isOpen, onClose, value, onChange }) {
     return () => (document.body.style.overflow = "auto");
   }, [isOpen]);
 
+  // Escape closes it, like the scrim and the ✕ already do.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -28,13 +38,22 @@ export default function SearchModal({ isOpen, onClose, value, onChange }) {
 
         <h3>Search Products</h3>
 
-        <input
-          type="text"
-          placeholder="Search by product name..."
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoFocus
-        />
+        {/* The results are already filtering behind the modal, so Enter just
+            needs to get the modal out of the way. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onClose();
+          }}
+        >
+          <input
+            type="search"
+            placeholder="Search by product name..."
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            autoFocus
+          />
+        </form>
       </div>
     </div>
   );

@@ -44,17 +44,36 @@ export default function Catalog() {
   }, [dispatch])
 
   // Deep links: ?category= from the aisle bar, ?q= from either search box.
+  // Each watches its own key — keying on the whole `query` object would reset
+  // the term every time an unrelated param moved.
   useEffect(() => {
     if (typeof router.query.category === 'string') {
       setFilter(prev => ({ ...prev, category: [router.query.category] }))
     }
-    if (typeof router.query.q === 'string') setSearchText(router.query.q)
+  }, [router.query.category])
+
+  // `q` drives the term both ways: arriving with one fills the box, and losing
+  // it (the header box submitted empty) takes the filter off again.
+  useEffect(() => {
+    setSearchText(typeof router.query.q === 'string' ? router.query.q : '')
+  }, [router.query.q])
+
+  useEffect(() => {
     if (router.query.search === '1') setShowSearch(true)
-  }, [router.query])
+  }, [router.query.search])
 
   const closeSearch = () => {
     setShowSearch(false)
-    router.replace('/catalog', undefined, { shallow: true })
+    // The modal types into local state, so hand the term back to the URL on the
+    // way out — that keeps the header box and a shared link in step. Only the
+    // modal flag is dropped; the aisle in the URL still matters.
+    const { search, q, ...rest } = router.query
+    const term = searchText.trim()
+    router.replace(
+      { pathname: '/catalog', query: term ? { ...rest, q: term } : rest },
+      undefined,
+      { shallow: true }
+    )
   }
 
   const priceCeiling = useMemo(() => {
@@ -92,7 +111,10 @@ export default function Catalog() {
     const term = searchText.trim().toLowerCase()
     let list = allProducts.filter(p => {
       if (hiddenSlugs.includes(p.categorySlug)) return false
-      if (term && !`${p.title} ${p.brand || ''}`.toLowerCase().includes(term)) return false
+      // Aisle name counts as a match — "dairy" is what a shopper types when they
+      // want the shelf, not a product whose title happens to contain the word.
+      const haystack = `${p.title} ${p.brand || ''} ${categoryLabel(categories, p.categorySlug)}`
+      if (term && !haystack.toLowerCase().includes(term)) return false
       if (filter.category.length && !filter.category.includes(p.categorySlug)) return false
       if (filter.inStock && !isSellable(p)) return false
       if (filter.organic && !p.organic) return false
@@ -105,7 +127,7 @@ export default function Catalog() {
     else if (sort === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
 
     return list
-  }, [allProducts, filter, searchText, sort, hiddenSlugs])
+  }, [allProducts, filter, searchText, sort, hiddenSlugs, categories])
 
   const activeCount =
     filter.category.length +

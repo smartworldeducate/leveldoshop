@@ -75,7 +75,7 @@ export default function Footer() {
 
           {/* About Links */}
           <div>
-            <div className="footer__title">About Leveldo</div>
+            <div className="footer__title">About A-one</div>
             <div className="footer__content">
               {footerAboutLinks.map((item, index) => (
                 <p key={index}>
@@ -103,7 +103,7 @@ export default function Footer() {
               <Link href="/">
                 <Image
                   src={logo}
-                  alt="Leveldo Grocery"
+                  alt="A-one Grocery"
                   width={150} // adjust width
                   height={50} // adjust height
                   className="footer__logo"
@@ -123,7 +123,7 @@ export default function Footer() {
         </Grid>
 
         <div className="footer__bottom">
-          © {new Date().getFullYear()} {storeName || 'Leveldo Grocery'}. All rights reserved.
+          © {new Date().getFullYear()} {storeName || 'A-one Grocery'}. All rights reserved.
         </div>
       </div>
     </footer>

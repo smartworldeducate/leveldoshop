@@ -83,7 +83,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>{`${storeName || 'Leveldo Grocery'} — fresh food, delivered today`}</title>
+        <title>{`${storeName || 'A-one Grocery'} — fresh food, delivered today`}</title>
         <meta
           name="description"
           content="Fruit, vegetables, dairy, bakery and the full weekly shop, delivered the same day."

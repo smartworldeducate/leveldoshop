@@ -42,7 +42,7 @@ export const CONTACT_FIELDS = [
 ];
 
 export const DEFAULT_SETTINGS = {
-  storeName: "Leveldo Grocery",
+  storeName: "A-one Grocery",
   tagline: "Delivering today until 8pm",
   pages: Object.fromEntries(TOGGLEABLE_PAGES.map((p) => [p.key, true])),
   sections: Object.fromEntries(HOME_SECTIONS.map((s) => [s.key, true])),

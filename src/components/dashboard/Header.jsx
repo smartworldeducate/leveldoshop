@@ -14,8 +14,10 @@ export default function Header({ title, eyebrow, actions, user, onOpenMenu }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!term.trim()) return;
-    router.push(`/dashboard/products?q=${encodeURIComponent(term.trim())}`);
+    const q = term.trim();
+    // An empty submit is how the term gets taken off again, so it still has to
+    // navigate — swallowing it left the Products list stuck on the last search.
+    router.push(q ? `/dashboard/products?q=${encodeURIComponent(q)}` : "/dashboard/products");
     setTerm("");
   };
 

@@ -6,7 +6,6 @@ import { signOut } from 'firebase/auth'
 
 import { useAuth } from '../context/AuthContext'
 import { auth } from '../lib/firebaseClient'
-import { isAdmin } from '../lib/admins'
 import { visibleCategories } from '../data/grocery'
 
 // `page` maps a link to its settings key; links without one are always shown.
@@ -20,7 +19,7 @@ const mainNav = [
 
 export default function Header() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, hasDashboardAccess } = useAuth()
   const cartItems = useSelector((state) => state.cartItems.value)
   const categories = useSelector((state) => state.categories.items)
   const pages = useSelector((state) => state.settings.values.pages)
@@ -51,9 +50,19 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', onClickAway)
   }, [])
 
+  // The box mirrors `?q=`, so arriving on /catalog?q=milk shows "milk" rather
+  // than an empty box next to filtered results, and leaving the catalogue drops
+  // the term instead of carrying it onto an unrelated page.
+  useEffect(() => {
+    setTerm(typeof router.query.q === 'string' ? router.query.q : '')
+  }, [router.query.q])
+
   const submitSearch = (e) => {
     e.preventDefault()
-    router.push(term.trim() ? `/catalog?q=${encodeURIComponent(term.trim())}` : '/catalog')
+    const q = term.trim()
+    // Submitting an empty box is how a shopper clears the search, so it has to
+    // reach /catalog without `q` rather than be swallowed here.
+    router.push(q ? `/catalog?q=${encodeURIComponent(q)}` : '/catalog')
   }
 
   const handleLogout = async () => {
@@ -83,7 +92,7 @@ export default function Header() {
               <i className="bx bx-basket"></i>
             </span>
             <span className="brand__text">
-              <strong>Leveldo</strong>
+              <strong>A-one</strong>
               <small>grocery</small>
             </span>
           </Link>
@@ -139,7 +148,7 @@ export default function Header() {
 
                   {accountOpen && (
                     <div className="account-menu">
-                      {isAdmin(user) && <Link href="/dashboard">Dashboard</Link>}
+                      {hasDashboardAccess && <Link href="/dashboard">Dashboard</Link>}
                       <Link href="/posts">Blog</Link>
                       <button type="button" onClick={handleLogout}>Log out</button>
                     </div>
@@ -167,7 +176,7 @@ export default function Header() {
         <div className="site-drawer__panel">
           <div className="site-drawer__head">
             <span className="brand__text">
-              <strong>Leveldo</strong>
+              <strong>A-one</strong>
               <small>grocery</small>
             </span>
             <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu">

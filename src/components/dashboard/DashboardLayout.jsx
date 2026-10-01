@@ -11,7 +11,6 @@ import Header from "./Header";
 import Button from "./ui/Button";
 import { auth } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
-import { isAdmin } from "@/lib/admins";
 import { fetchProducts } from "@/redux/products/productsSlice";
 import { fetchOrders } from "@/redux/admin/ordersSlice";
 import { isCompleted, storeAlerts } from "@/lib/analytics";
@@ -40,7 +39,7 @@ function FullScreen({ children }) {
 export default function DashboardLayout({ title = "Overview", eyebrow = "Store", actions, children }) {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { user, loading } = useAuth();
+  const { user, loading, hasDashboardAccess } = useAuth();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -48,7 +47,7 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
   const products = useSelector((s) => s.products.items);
   const orders = useSelector((s) => s.adminOrders.items);
 
-  const allowed = isAdmin(user);
+  const allowed = hasDashboardAccess;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -120,8 +119,8 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
           </span>
           <h1 className="mt-4 text-xl font-bold text-slate-800">Staff access only</h1>
           <p className="mt-2 text-sm text-slate-500">
-            <span className="font-medium text-slate-600">{user.email}</span> is not on the store
-            admin list. Ask an owner to add it, or head back to the shop.
+            <span className="font-medium text-slate-600">{user.email}</span> is not on the
+            dashboard users list. Ask an owner to add it, or head back to the shop.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button href="/" variant="outline" size="sm">
@@ -139,7 +138,7 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
   return (
     <>
       <Head>
-        <title>{`${title} · Leveldo Grocery`}</title>
+        <title>{`${title} · A-one Grocery`}</title>
       </Head>
 
       <div className="dashboard-shell flex h-screen w-full gap-4 bg-[#DAD8EA] p-4 font-sans">

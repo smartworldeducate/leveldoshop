@@ -8,6 +8,7 @@ import {
   PieChart,
   Settings,
   ShoppingBasket,
+  ShieldCheck,
   Sprout,
   Users,
 } from "lucide-react";
@@ -47,6 +48,13 @@ export const NAV_SECTIONS = [
     items: [
       { id: "home", label: "Home page", href: "/dashboard/home", icon: Home },
       { id: "pages", label: "Pages & sections", href: "/dashboard/settings", icon: Settings },
+    ],
+  },
+  {
+    title: "Access",
+    items: [
+      // ownerOnly: hidden from added dashboard users — only owners manage access.
+      { id: "users", label: "Dashboard users", href: "/dashboard/users", icon: ShieldCheck, ownerOnly: true },
     ],
   },
 ];

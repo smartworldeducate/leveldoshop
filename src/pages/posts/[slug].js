@@ -97,7 +97,7 @@ function SinglePost() {
   return (
     <>
       <Head>
-        <title>{`${post.title} · Leveldo Grocery`}</title>
+        <title>{`${post.title} · A-one Grocery`}</title>
         <meta name="description" content={excerptOf(post.content, 155)} />
       </Head>
 

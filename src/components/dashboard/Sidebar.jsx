@@ -4,7 +4,7 @@ import { ChevronLeft, LogOut, Store, X } from "lucide-react";
 import { NAV_SECTIONS, isActiveRoute } from "./nav";
 import { CountBadge } from "./ui/Badge";
 import { FOCUS } from "./theme";
-import { initialsOf } from "@/lib/admins";
+import { initialsOf, isAdmin } from "@/lib/admins";
 
 function NavLink({ item, active, collapsed, count, onNavigate }) {
   const { icon: Icon, href, label } = item;
@@ -47,6 +47,11 @@ export default function Sidebar({
   counts = {},
 }) {
   const { pathname } = useRouter();
+  const owner = isAdmin(user);
+  const sections = NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((item) => !item.ownerOnly || owner),
+  })).filter((s) => s.items.length);
 
   return (
     <>
@@ -70,7 +75,7 @@ export default function Sidebar({
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-white">Leveldo Grocery</p>
+              <p className="truncate text-sm font-bold text-white">A-one Grocery</p>
               <p className="truncate text-[11px] text-white/60">Back office</p>
             </div>
           )}
@@ -85,7 +90,7 @@ export default function Sidebar({
 
         {/* sections */}
         <nav className="mt-6 flex flex-1 flex-col gap-5 overflow-y-auto">
-          {NAV_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <div key={section.title} className="flex flex-col gap-1.5">
               {!collapsed && (
                 <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">

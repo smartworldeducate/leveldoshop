@@ -73,11 +73,15 @@ export default function ProductsPage() {
   const editing = Boolean(formParam && formParam !== "new");
   const showForm = Boolean(formParam);
 
-  // Deep links: the header search passes ?q=, the Categories page ?category=
+  // Deep links: the header search passes ?q=, the Categories page ?category=.
+  // `q` is mirrored rather than merely read, so dropping it clears the list.
   useEffect(() => {
-    if (typeof router.query.q === "string") setQuery(router.query.q);
+    setQuery(typeof router.query.q === "string" ? router.query.q : "");
+  }, [router.query.q]);
+
+  useEffect(() => {
     if (typeof router.query.category === "string") setCategory(router.query.category);
-  }, [router.query.q, router.query.category]);
+  }, [router.query.category]);
 
   // Load the product being edited once the catalogue has arrived.
   useEffect(() => {
@@ -90,12 +94,16 @@ export default function ProductsPage() {
     if (product) setForm((prev) => (prev.id === product.id ? prev : toForm(product)));
   }, [formParam, products]);
 
-  const goTo = (value) =>
+  // Opening and closing the editor keeps whatever search the list was under, so
+  // editing one result and coming back doesn't dump you in the full catalogue.
+  const goTo = (value) => {
+    const { form, ...rest } = router.query;
     router.push(
-      { pathname: "/dashboard/products", query: value ? { form: value } : {} },
+      { pathname: "/dashboard/products", query: value ? { ...rest, form: value } : rest },
       undefined,
       { shallow: true }
     );
+  };
 
   const openAdd = () => {
     setForm(EMPTY_PRODUCT);
