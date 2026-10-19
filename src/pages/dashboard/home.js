@@ -20,11 +20,12 @@ import Field, { Input, Select, Textarea } from "@/components/dashboard/ui/Field"
 import { SwitchRow } from "@/components/dashboard/ui/Switch";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 
-import { saveSettings } from "@/redux/settings/settingsSlice";
+import { HOME_SECTIONS, saveSettings } from "@/redux/settings/settingsSlice";
 import {
   BLANK,
   DEFAULT_HOME,
   HOME_ICONS,
+  HOME_ORDER,
   MOSAIC_VARIANTS,
   withHomeDefaults,
 } from "@/data/home";
@@ -38,6 +39,21 @@ const HEADING_KEYS = [
   { key: "steps", label: "How it works" },
   { key: "everything", label: "Popular in store" },
   { key: "blog", label: "From the blog" },
+];
+
+/** Labels for the layout list, including the hero, which always comes first. */
+const SECTION_LABELS = Object.fromEntries(HOME_SECTIONS.map((s) => [s.key, s]));
+
+/** Small words around the shelves, edited on the Labels tab. */
+const LABEL_FIELDS = [
+  { key: "allTab", label: "\"All aisles\" filter tab", hint: "First tab above Fresh in today" },
+  { key: "everythingCount", label: "Popular in store note", hint: "Used when that section's note is blank — {count}, {s}" },
+  { key: "aisleCount", label: "Aisle card item count", hint: "{count} and {s}" },
+  { key: "aisleFrom", label: "Aisle card entry price", hint: "{price}" },
+  { key: "aisleRestock", label: "Aisle card — out of stock" },
+  { key: "aisleSoon", label: "Aisle card — empty aisle" },
+  { key: "readingTime", label: "Blog reading time", hint: "{minutes}" },
+  { key: "readMore", label: "Blog card link" },
 ];
 
 const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
@@ -89,6 +105,31 @@ function SingleImage({ item, onChange, label = "Picture", hint }) {
   );
 }
 
+/**
+ * A grid of text inputs bound to one object. Placeholders show the shipped
+ * wording, which is also what a blank field falls back to.
+ */
+function TextFields({ fields, value, defaults = {}, onChange }) {
+  return fields.map(({ key, label, hint, span, rows }) => (
+    <Field key={key} label={label} hint={hint} span={span}>
+      {rows ? (
+        <Textarea
+          rows={rows}
+          value={value?.[key] || ""}
+          onChange={(e) => onChange({ [key]: e.target.value })}
+          placeholder={defaults[key] || ""}
+        />
+      ) : (
+        <Input
+          value={value?.[key] || ""}
+          onChange={(e) => onChange({ [key]: e.target.value })}
+          placeholder={defaults[key] || ""}
+        />
+      )}
+    </Field>
+  ));
+}
+
 /** A removable, re-orderable block in a repeatable list. */
 function ListItem({ index, total, title, onMove, onRemove, canRemove = true, children }) {
   return (
@@ -136,6 +177,7 @@ export default function HomeContentPage() {
   const dispatch = useDispatch();
   const { values, saving } = useSelector((s) => s.settings);
   const [draft, setDraft] = useState(() => withHomeDefaults(values.home));
+  const [sections, setSections] = useState(() => values.sections || {});
   const [tab, setTab] = useState("hero");
   const [uploading, setUploading] = useState(false);
 
@@ -144,7 +186,18 @@ export default function HomeContentPage() {
     setDraft(withHomeDefaults(values.home));
   }, [values.home]);
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(withHomeDefaults(values.home));
+  useEffect(() => {
+    setSections(values.sections || {});
+  }, [values.sections]);
+
+  const dirty =
+    JSON.stringify(draft) !== JSON.stringify(withHomeDefaults(values.home)) ||
+    JSON.stringify(sections) !== JSON.stringify(values.sections || {});
+
+  const discard = () => {
+    setDraft(withHomeDefaults(values.home));
+    setSections(values.sections || {});
+  };
 
   // ---- draft helpers ----
   const setIn = (key, patch) => setDraft((d) => ({ ...d, [key]: { ...d[key], ...patch } }));
@@ -192,6 +245,34 @@ export default function HomeContentPage() {
     setList(path, next);
   };
 
+  // Nested groups: hero.deal / hero.panel, hero.badges.eta / .trust, mosaic.autoCopy.
+  const setHeroGroup = (group, patch) =>
+    setDraft((d) => ({ ...d, hero: { ...d.hero, [group]: { ...d.hero[group], ...patch } } }));
+
+  const setBadge = (which, patch) =>
+    setDraft((d) => ({
+      ...d,
+      hero: {
+        ...d.hero,
+        badges: { ...d.hero.badges, [which]: { ...d.hero.badges[which], ...patch } },
+      },
+    }));
+
+  const setAutoCopy = (patch) =>
+    setDraft((d) => ({
+      ...d,
+      mosaic: { ...d.mosaic, autoCopy: { ...d.mosaic.autoCopy, ...patch } },
+    }));
+
+  const moveSection = (index, delta) =>
+    setDraft((d) => {
+      const next = [...d.order];
+      const target = index + delta;
+      if (target < 0 || target >= next.length) return d;
+      [next[index], next[target]] = [next[target], next[index]];
+      return { ...d, order: next };
+    });
+
   const setHeading = (key, patch) =>
     setDraft((d) => ({
       ...d,
@@ -223,7 +304,7 @@ export default function HomeContentPage() {
         mosaic: { ...draft.mosaic, tiles: await resolve(draft.mosaic.tiles) },
       };
 
-      await dispatch(saveSettings({ ...values, home })).unwrap();
+      await dispatch(saveSettings({ ...values, sections, home })).unwrap();
       toast.success("Home page updated");
     } catch (err) {
       toast.error(err?.message || (typeof err === "string" ? err : "Could not save the home page"));
@@ -240,10 +321,15 @@ export default function HomeContentPage() {
     if (tab === "offers") setDraft((d) => ({ ...d, mosaic: fresh.mosaic }));
     if (tab === "steps") setDraft((d) => ({ ...d, steps: fresh.steps }));
     if (tab === "rewards") setDraft((d) => ({ ...d, rewards: fresh.rewards, closer: fresh.closer }));
+    if (tab === "labels") setDraft((d) => ({ ...d, labels: fresh.labels }));
+    if (tab === "layout") {
+      setDraft((d) => ({ ...d, order: HOME_ORDER, seo: fresh.seo }));
+      setSections(Object.fromEntries(HOME_SECTIONS.map((s) => [s.key, true])));
+    }
     toast("Reset to the shipped copy — save to keep it");
   };
 
-  const sectionOff = (key) => values.sections?.[key] === false;
+  const sectionOff = (key) => sections?.[key] === false;
 
   return (
     <DashboardLayout
@@ -266,7 +352,7 @@ export default function HomeContentPage() {
               variant="outline"
               size="sm"
               icon={RotateCcw}
-              onClick={() => setDraft(withHomeDefaults(values.home))}
+              onClick={discard}
             >
               Discard
             </Button>
@@ -287,19 +373,102 @@ export default function HomeContentPage() {
         value={tab}
         onChange={setTab}
         options={[
+          { value: "layout", label: "Layout & SEO" },
           { value: "hero", label: "Hero", count: draft.hero.slides.length },
           { value: "promises", label: "Promises", count: draft.promises.length },
           { value: "headings", label: "Section titles" },
           { value: "offers", label: "Offer tiles" },
           { value: "steps", label: "How it works", count: draft.steps.length },
           { value: "rewards", label: "Banner & closer" },
+          { value: "labels", label: "Labels" },
         ]}
       />
 
       <p className="text-xs text-slate-400">
-        Leave any field blank to fall back to the shipped wording. Which blocks appear at all is
-        set under <strong className="text-slate-500">Pages &amp; sections</strong>.
+        Leave any field blank to fall back to the shipped wording. Words in braces, like{" "}
+        <code>{"{count}"}</code>, are filled in from live stock. Order and visibility of the blocks
+        are on <strong className="text-slate-500">Layout &amp; SEO</strong>.
       </p>
+
+      {/* ---------------- layout + seo ---------------- */}
+      {tab === "layout" && (
+        <>
+          <Card className="space-y-4">
+            <CardHeader
+              title="Page layout"
+              subtitle="The hero always opens the page; everything below it follows this order"
+            />
+            {draft.order.map((key, i) => (
+              <div
+                key={key}
+                className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3"
+              >
+                <span className="w-6 text-xs font-bold text-slate-400">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <SwitchRow
+                    title={SECTION_LABELS[key]?.label || key}
+                    note={SECTION_LABELS[key]?.note}
+                    checked={sections?.[key] !== false}
+                    onChange={(on) => setSections((prev) => ({ ...prev, [key]: on }))}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={ArrowUp}
+                  disabled={i === 0}
+                  onClick={() => moveSection(i, -1)}
+                  aria-label="Move up"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={ArrowDown}
+                  disabled={i === draft.order.length - 1}
+                  onClick={() => moveSection(i, 1)}
+                  aria-label="Move down"
+                />
+              </div>
+            ))}
+          </Card>
+
+          <Card className="space-y-4">
+            <CardHeader
+              title="Search & browser tab"
+              subtitle="What Google and the browser tab show for the home page — {store} is your store name"
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextFields
+                fields={[
+                  { key: "title", label: "Page title", span: 2 },
+                  { key: "description", label: "Meta description", span: 2, rows: 2 },
+                ]}
+                value={draft.seo}
+                defaults={DEFAULT_HOME.seo}
+                onChange={(patch) => setIn("seo", patch)}
+              />
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ---------------- labels ---------------- */}
+      {tab === "labels" && (
+        <Card className="space-y-4">
+          <CardHeader
+            title="Small labels"
+            subtitle="Tabs, counts and links around the shelves. {s} adds an s when the count is not 1."
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextFields
+              fields={LABEL_FIELDS}
+              value={draft.labels}
+              defaults={DEFAULT_HOME.labels}
+              onChange={(patch) => setIn("labels", patch)}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* ---------------- hero ---------------- */}
       {tab === "hero" && (
@@ -414,6 +583,84 @@ export default function HomeContentPage() {
               </ListItem>
             ))}
           </Card>
+
+          <Card className="space-y-4">
+            <CardHeader
+              title="Automatic deal slide"
+              subtitle="Used when the deal slide is switched on — {pct} is the deepest real markdown"
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextFields
+                fields={[
+                  { key: "kicker", label: "Kicker" },
+                  { key: "display", label: "Headline" },
+                  { key: "script", label: "Sub-headline", span: 2 },
+                  { key: "lead", label: "Paragraph", span: 2, rows: 2 },
+                  { key: "ctaLabel", label: "Button label" },
+                ]}
+                value={draft.hero.deal}
+                defaults={DEFAULT_HOME.hero.deal}
+                onChange={(patch) => setHeroGroup("deal", patch)}
+              />
+            </div>
+          </Card>
+
+          <Card className="space-y-4">
+            <CardHeader title="Hero extras" subtitle="Countdown, deals link and the basket panel" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Countdown text" hint="{time} is the time left, e.g. 2h 15m">
+                <Input
+                  value={draft.hero.countdownText || ""}
+                  onChange={(e) => setIn("hero", { countdownText: e.target.value })}
+                  placeholder={DEFAULT_HOME.hero.countdownText}
+                />
+              </Field>
+              <Field label="Deals link" hint="Shown beside the button while a deal slide exists">
+                <Input
+                  value={draft.hero.dealsLinkLabel || ""}
+                  onChange={(e) => setIn("hero", { dealsLinkLabel: e.target.value })}
+                  placeholder={DEFAULT_HOME.hero.dealsLinkLabel}
+                />
+              </Field>
+              <TextFields
+                fields={[
+                  { key: "title", label: "Basket panel title" },
+                  { key: "countNote", label: "Basket panel count", hint: "{count} and {s}" },
+                  { key: "subtotalLabel", label: "Subtotal label" },
+                ]}
+                value={draft.hero.panel}
+                defaults={DEFAULT_HOME.hero.panel}
+                onChange={(patch) => setHeroGroup("panel", patch)}
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              The basket panel and its two badges appear when a slide has no picture and no
+              product has a photo yet. {"{cutoff}"} is your same-day cut-off.
+            </p>
+            {[
+              { which: "eta", label: "Top badge" },
+              { which: "trust", label: "Bottom badge" },
+            ].map(({ which, label }) => (
+              <div key={which} className="rounded-2xl border border-slate-200 p-4">
+                <p className="mb-3 text-sm font-bold text-slate-700">{label}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <IconPicker
+                    value={draft.hero.badges[which].icon}
+                    onChange={(icon) => setBadge(which, { icon })}
+                  />
+                  <TextFields
+                    fields={[
+                      { key: "title", label: "Title" },
+                      { key: "note", label: "Note" },
+                    ]}
+                    value={draft.hero.badges[which]}
+                    defaults={DEFAULT_HOME.hero.badges[which]}
+                    onChange={(patch) => setBadge(which, patch)}
+                  />
+                </div>
+              </div>
+            ))}
+          </Card>
         </>
       )}
 
@@ -520,6 +767,13 @@ export default function HomeContentPage() {
                     placeholder={DEFAULT_HOME.headings[key]?.linkLabel || "See all"}
                   />
                 </Field>
+                <Field label="Link" span={2} hint="Where the link goes — blank uses the default">
+                  <Input
+                    value={draft.headings[key]?.linkHref || ""}
+                    onChange={(e) => setHeading(key, { linkHref: e.target.value })}
+                    placeholder={DEFAULT_HOME.headings[key]?.linkHref || "No link"}
+                  />
+                </Field>
               </div>
             </div>
           ))}
@@ -541,102 +795,137 @@ export default function HomeContentPage() {
               checked={draft.mosaic.auto !== false}
               onChange={(on) => setIn("mosaic", { auto: on })}
             />
+            <Field label="Tile button label">
+              <Input
+                value={draft.mosaic.ctaLabel || ""}
+                onChange={(e) => setIn("mosaic", { ctaLabel: e.target.value })}
+                placeholder={DEFAULT_HOME.mosaic.ctaLabel}
+              />
+            </Field>
           </Card>
 
-          {draft.mosaic.auto === false && (
+          {draft.mosaic.auto !== false && (
             <Card className="space-y-4">
               <CardHeader
-                title="Tiles"
-                subtitle="Each tile sits in a fixed slot; give two tiles the same slot and one will cover the other"
-                action={
-                  draft.mosaic.tiles.length < 4 ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon={Plus}
-                      onClick={() =>
-                        addItem(
-                          "tiles",
-                          { ...DEFAULT_HOME.mosaic.tiles[draft.mosaic.tiles.length] },
-                          "tile"
-                        )
-                      }
-                    >
-                      Add tile
-                    </Button>
-                  ) : null
-                }
+                title="Automatic tile wording"
+                subtitle="{pct} is the real markdown; product and aisle names come from stock"
               />
-
-              {draft.mosaic.tiles.map((tile, i) => (
-                <ListItem
-                  key={tile.id || i}
-                  index={i}
-                  total={draft.mosaic.tiles.length}
-                  title={tile.title || `Tile ${i + 1}`}
-                  onMove={(idx, d) => moveItem("tiles", idx, d)}
-                  onRemove={(idx) => removeItem("tiles", idx)}
-                >
-                  <Field label="Position">
-                    <Select
-                      value={tile.variant || "tall"}
-                      onChange={(e) => patchItem("tiles", i, { variant: e.target.value })}
-                    >
-                      {MOSAIC_VARIANTS.map((v) => (
-                        <option key={v.value} value={v.value}>
-                          {v.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <IconPicker
-                    label="Watermark icon"
-                    value={tile.icon}
-                    onChange={(icon) => patchItem("tiles", i, { icon })}
-                  />
-                  <Field label="Kicker">
-                    <Input
-                      value={tile.kicker || ""}
-                      onChange={(e) => patchItem("tiles", i, { kicker: e.target.value })}
-                      placeholder="Special deal"
-                    />
-                  </Field>
-                  <Field label="Title">
-                    <Input
-                      value={tile.title || ""}
-                      onChange={(e) => patchItem("tiles", i, { title: e.target.value })}
-                      placeholder="Everything on the list"
-                    />
-                  </Field>
-                  <Field label="Big line" hint="Optional — e.g. 20% or One">
-                    <Input
-                      value={tile.headline || ""}
-                      onChange={(e) => patchItem("tiles", i, { headline: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Big line suffix" hint="Small caps beside it — e.g. off">
-                    <Input
-                      value={tile.headlineNote || ""}
-                      onChange={(e) => patchItem("tiles", i, { headlineNote: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Link" span={2}>
-                    <Input
-                      value={tile.href || ""}
-                      onChange={(e) => patchItem("tiles", i, { href: e.target.value })}
-                      placeholder="/catalog?category=bakery"
-                    />
-                  </Field>
-                  <SingleImage
-                    item={tile}
-                    label="Tile picture"
-                    hint="Optional. Without one the tile shows the watermark icon."
-                    onChange={(next) => patchItem("tiles", i, next)}
-                  />
-                </ListItem>
-              ))}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextFields
+                  fields={[
+                    { key: "dealKicker", label: "Best deal — kicker" },
+                    { key: "dealHeadline", label: "Best deal — big line" },
+                    { key: "dealNote", label: "Best deal — suffix" },
+                    { key: "saveKicker", label: "Deals tile — kicker" },
+                    { key: "saveTitle", label: "Deals tile — title" },
+                    { key: "saveHeadline", label: "Deals tile — big line" },
+                    { key: "featureKicker", label: "Aisle tile — kicker" },
+                    { key: "newKicker", label: "Newest arrival — kicker" },
+                  ]}
+                  value={draft.mosaic.autoCopy}
+                  defaults={DEFAULT_HOME.mosaic.autoCopy}
+                  onChange={setAutoCopy}
+                />
+              </div>
             </Card>
           )}
+
+          <Card className="space-y-4">
+            <CardHeader
+              title="Tiles"
+              subtitle={
+                draft.mosaic.auto === false
+                  ? "Each tile sits in a fixed slot; give two tiles the same slot and one will cover the other"
+                  : "Automatic mode uses these when a slot has nothing live to show (no deals yet, no stocked aisle)"
+              }
+              action={
+                draft.mosaic.tiles.length < 4 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={Plus}
+                    onClick={() =>
+                      addItem(
+                        "tiles",
+                        { ...DEFAULT_HOME.mosaic.tiles[draft.mosaic.tiles.length] },
+                        "tile"
+                      )
+                    }
+                  >
+                    Add tile
+                  </Button>
+                ) : null
+              }
+            />
+
+            {draft.mosaic.tiles.map((tile, i) => (
+              <ListItem
+                key={tile.id || i}
+                index={i}
+                total={draft.mosaic.tiles.length}
+                title={tile.title || `Tile ${i + 1}`}
+                onMove={(idx, d) => moveItem("tiles", idx, d)}
+                onRemove={(idx) => removeItem("tiles", idx)}
+              >
+                <Field label="Position">
+                  <Select
+                    value={tile.variant || "tall"}
+                    onChange={(e) => patchItem("tiles", i, { variant: e.target.value })}
+                  >
+                    {MOSAIC_VARIANTS.map((v) => (
+                      <option key={v.value} value={v.value}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <IconPicker
+                  label="Watermark icon"
+                  value={tile.icon}
+                  onChange={(icon) => patchItem("tiles", i, { icon })}
+                />
+                <Field label="Kicker">
+                  <Input
+                    value={tile.kicker || ""}
+                    onChange={(e) => patchItem("tiles", i, { kicker: e.target.value })}
+                    placeholder="Special deal"
+                  />
+                </Field>
+                <Field label="Title">
+                  <Input
+                    value={tile.title || ""}
+                    onChange={(e) => patchItem("tiles", i, { title: e.target.value })}
+                    placeholder="Everything on the list"
+                  />
+                </Field>
+                <Field label="Big line" hint="Optional — e.g. 20% or One">
+                  <Input
+                    value={tile.headline || ""}
+                    onChange={(e) => patchItem("tiles", i, { headline: e.target.value })}
+                  />
+                </Field>
+                <Field label="Big line suffix" hint="Small caps beside it — e.g. off">
+                  <Input
+                    value={tile.headlineNote || ""}
+                    onChange={(e) => patchItem("tiles", i, { headlineNote: e.target.value })}
+                  />
+                </Field>
+                <Field label="Link" span={2}>
+                  <Input
+                    value={tile.href || ""}
+                    onChange={(e) => patchItem("tiles", i, { href: e.target.value })}
+                    placeholder="/catalog?category=bakery"
+                  />
+                </Field>
+                <SingleImage
+                  item={tile}
+                  label="Tile picture"
+                  hint="Optional. Without one the tile shows the watermark icon."
+                  onChange={(next) => patchItem("tiles", i, next)}
+                />
+              </ListItem>
+            ))}
+          </Card>
         </>
       )}
 
@@ -792,7 +1081,7 @@ export default function HomeContentPage() {
           <Card className="space-y-4">
             <CardHeader
               title="Closing invitation"
-              subtitle="The last block on the page — always shown"
+              subtitle="The last block on the page"
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Heading">
@@ -801,12 +1090,21 @@ export default function HomeContentPage() {
                   onChange={(e) => setIn("closer", { title: e.target.value })}
                 />
               </Field>
-              <Field label="Paragraph" hint="Blank counts your products automatically">
+              <Field label="Paragraph" hint="Blank uses the two counted lines below">
                 <Input
                   value={draft.closer.body || ""}
                   onChange={(e) => setIn("closer", { body: e.target.value })}
                 />
               </Field>
+              <TextFields
+                fields={[
+                  { key: "bodyStocked", label: "Counted line — in stock", hint: "{count} and {s}" },
+                  { key: "bodyEmpty", label: "Counted line — empty shop" },
+                ]}
+                value={draft.closer}
+                defaults={DEFAULT_HOME.closer}
+                onChange={(patch) => setIn("closer", patch)}
+              />
               <Field label="Primary button">
                 <Input
                   value={draft.closer.primaryLabel || ""}

@@ -13,7 +13,7 @@ import Grid from '../components/Grid'
 import ProductCard from '../components/ProductCard'
 
 import { discountPercent, expiryState, isSellable, visibleCategories } from '../data/grocery'
-import { DEFAULT_HOME, headingOf, orDefault } from '../data/home'
+import { DEFAULT_HOME, copyOf, fillText, headingOf, orDefault, withHomeDefaults } from '../data/home'
 import { excerptOf, formatPostDate, readingTime } from '../utils/post'
 
 // Redux
@@ -32,8 +32,10 @@ export default function Home() {
   // Every heading, banner and button label on this page is written in the
   // dashboard; `headingOf` falls back to the shipped copy field by field.
   const head = (key) => headingOf(home, key)
+  const label = (key) => copyOf(home, 'labels', key)
   const rewards = home?.rewards || DEFAULT_HOME.rewards
   const closer = home?.closer || DEFAULT_HOME.closer
+  const order = useMemo(() => withHomeDefaults(home).order, [home])
 
   const showBlog = sections?.blog !== false && pages?.posts !== false
 
@@ -80,65 +82,66 @@ export default function Home() {
     [sellable, freshAisle]
   )
 
-  return (
-    <>
-      <Head>
-        <title>{`${storeName || 'A-one Grocery'} — fresh food, delivered today`}</title>
-        <meta
-          name="description"
-          content="Fruit, vegetables, dairy, bakery and the full weekly shop, delivered the same day."
-        />
-      </Head>
-
-      <MarketHero />
-
-      {/* Rides up over the hero's lower edge, the way a shop's promises sit on
-          the window rather than below it. */}
-      {on('promise') && (
-        <section className="home-block home-block--overlap">
+  // Each home block, keyed as in HOME_ORDER. The shopkeeper sets the order and
+  // which are shown; a block that has nothing to show returns null.
+  const blocks = {
+    // Rides up over the hero's lower edge, the way a shop's promises sit on the
+    // window rather than below it — but only when it directly follows the hero.
+    promise: (position) =>
+      on('promise') && (
+        <section className={`home-block ${position === 0 ? 'home-block--overlap' : ''}`}>
           <PromiseStrip />
         </section>
-      )}
+      ),
 
-      {on('aisles') && (
+    aisles: () =>
+      on('aisles') && (
         <section className="home-block">
           <SectionHead
             kicker={head('aisles').kicker}
             title={head('aisles').title}
             note={head('aisles').note}
-            href="/catalog"
+            href={head('aisles').linkHref || undefined}
             linkLabel={head('aisles').linkLabel}
           />
           <CategoryStrip products={products} />
         </section>
-      )}
+      ),
 
-      {on('offers') && (
+    offers: () =>
+      on('offers') && (
         <section className="home-block">
           <PromoMosaic />
         </section>
-      )}
+      ),
 
-      {on('deals') && deals.length > 0 && (
+    deals: () =>
+      on('deals') &&
+      deals.length > 0 && (
         <section className="home-block">
           <SectionHead
             kicker={head('deals').kicker}
             title={head('deals').title}
             note={head('deals').note}
-            href={pages?.deals === false ? undefined : '/deals'}
+            href={
+              pages?.deals === false && head('deals').linkHref === '/deals'
+                ? undefined
+                : head('deals').linkHref || undefined
+            }
             linkLabel={head('deals').linkLabel}
           />
           <ProductRail items={deals} />
         </section>
-      )}
+      ),
 
-      {on('fresh') && (
+    fresh: () =>
+      on('fresh') && (
         <section className="home-block">
           <SectionHead
             kicker={head('fresh').kicker}
             title={head('fresh').title}
             note={head('fresh').note}
-            href="/catalog"
+            href={head('fresh').linkHref || undefined}
             linkLabel={head('fresh').linkLabel}
           />
 
@@ -153,7 +156,7 @@ export default function Home() {
                 className={`filter-tabs__tab ${freshAisle === 'all' ? 'is-active' : ''}`}
                 onClick={() => setFreshAisle('all')}
               >
-                Everything
+                {label('allTab')}
               </button>
 
               {freshTabs.map((c) => (
@@ -177,19 +180,25 @@ export default function Home() {
             ))}
           </Grid>
         </section>
-      )}
+      ),
 
-      <section className="home-block">
-        <SectionHead
-          kicker={head('steps').kicker}
-          title={head('steps').title}
-          note={head('steps').note}
-        />
-        <HowItWorks />
-      </section>
+    steps: () =>
+      on('steps') && (
+        <section className="home-block">
+          <SectionHead
+            kicker={head('steps').kicker}
+            title={head('steps').title}
+            note={head('steps').note}
+            href={head('steps').linkHref || undefined}
+            linkLabel={head('steps').linkLabel}
+          />
+          <HowItWorks />
+        </section>
+      ),
 
-      {/* Membership band — drawn in CSS, so it needs no photography */}
-      {on('promo') && (
+    // Membership band — drawn in CSS, so it needs no photography
+    promo: () =>
+      on('promo') && (
         <section className="home-block">
           <div className="promo-band">
             <div className="promo-band__copy">
@@ -226,15 +235,18 @@ export default function Home() {
             )}
           </div>
         </section>
-      )}
+      ),
 
-      {on('blog') && pages?.posts !== false && posts.length > 0 && (
+    blog: () =>
+      on('blog') &&
+      pages?.posts !== false &&
+      posts.length > 0 && (
         <section className="home-block">
           <SectionHead
             kicker={head('blog').kicker}
             title={head('blog').title}
             note={head('blog').note}
-            href="/posts"
+            href={head('blog').linkHref || undefined}
             linkLabel={head('blog').linkLabel}
           />
           <div className="blog-grid">
@@ -248,12 +260,12 @@ export default function Home() {
                   <div className="post-card__meta">
                     <span>{formatPostDate(post.createdAt)}</span>
                     <span className="post-card__dot" />
-                    <span>{readingTime(post.content)} min read</span>
+                    <span>{fillText(label('readingTime'), { minutes: readingTime(post.content) })}</span>
                   </div>
                   <h3 className="post-card__title">{post.title}</h3>
                   <p className="post-card__excerpt">{excerptOf(post.content, 110)}</p>
                   <span className="post-card__more">
-                    Read article
+                    {label('readMore')}
                     <i className="bx bx-chevron-right"></i>
                   </span>
                 </div>
@@ -261,20 +273,22 @@ export default function Home() {
             ))}
           </div>
         </section>
-      )}
+      ),
 
-      {/* A slice, not the whole catalogue — the full list is one click away and
-          dumping every product here made the page grow without limit. */}
-      {on('everything') && showSecondGrid && (
+    // A slice, not the whole catalogue — the full list is one click away and
+    // dumping every product here made the page grow without limit.
+    everything: () =>
+      on('everything') &&
+      showSecondGrid && (
         <section className="home-block">
           <SectionHead
             kicker={head('everything').kicker}
             title={head('everything').title}
             note={
               head('everything').note ||
-              `${everything.length} product${everything.length === 1 ? '' : 's'} in the shop`
+              fillText(label('everythingCount'), { count: everything.length })
             }
-            href="/catalog"
+            href={head('everything').linkHref || undefined}
             linkLabel={head('everything').linkLabel}
           />
           <Grid col={6} mdCol={3} smCol={2} gap={20}>
@@ -283,34 +297,53 @@ export default function Home() {
             ))}
           </Grid>
         </section>
-      )}
+      ),
 
-      {/* Closing invitation — a landing page should end on a way forward */}
-      <section className="home-block">
-        <div className="closer">
-          <div>
-            <h2>{orDefault(closer.title, DEFAULT_HOME.closer.title)}</h2>
-            <p>
-              {closer.body ||
-                (everything.length > 0
-                  ? `${everything.length} product${
-                      everything.length === 1 ? '' : 's'
-                    } on the shelf, delivered the same day.`
-                  : 'The shelves are being stocked — check back shortly.')}
-            </p>
-          </div>
-          <div className="closer__actions">
-            <Link href={orDefault(closer.primaryHref, '/catalog')} className="closer__primary">
-              {orDefault(closer.primaryLabel, 'Start shopping')}
-            </Link>
-            {closer.ghostLabel && closer.ghostHref && pages?.contact !== false && (
-              <Link href={closer.ghostHref} className="closer__ghost">
-                {closer.ghostLabel}
+    // Closing invitation — a landing page should end on a way forward
+    closer: () =>
+      on('closer') && (
+        <section className="home-block">
+          <div className="closer">
+            <div>
+              <h2>{orDefault(closer.title, DEFAULT_HOME.closer.title)}</h2>
+              <p>
+                {closer.body ||
+                  (everything.length > 0
+                    ? fillText(copyOf(home, 'closer', 'bodyStocked'), { count: everything.length })
+                    : copyOf(home, 'closer', 'bodyEmpty'))}
+              </p>
+            </div>
+            <div className="closer__actions">
+              <Link href={orDefault(closer.primaryHref, '/catalog')} className="closer__primary">
+                {orDefault(closer.primaryLabel, 'Start shopping')}
               </Link>
-            )}
+              {closer.ghostLabel && closer.ghostHref && pages?.contact !== false && (
+                <Link href={closer.ghostHref} className="closer__ghost">
+                  {closer.ghostLabel}
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ),
+  }
+
+  return (
+    <>
+      <Head>
+        <title>{fillText(copyOf(home, 'seo', 'title'), { store: storeName || 'A-one Grocery' })}</title>
+        <meta
+          name="description"
+          content={fillText(copyOf(home, 'seo', 'description'), { store: storeName || 'A-one Grocery' })}
+        />
+      </Head>
+
+      <MarketHero />
+
+      {order.map((key, i) => {
+        const block = blocks[key]?.(i)
+        return block ? <React.Fragment key={key}>{block}</React.Fragment> : null
+      })}
     </>
   )
 }

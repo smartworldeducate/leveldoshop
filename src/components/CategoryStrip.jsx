@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSelector } from 'react-redux'
 
 import { aisleIcon, formatMoney, isSellable, visibleCategories } from '../data/grocery'
+import { copyOf, fillText } from '../data/home'
 
 /**
  * Collection cards. Aisles are whatever the dashboard says they are; each one
@@ -13,6 +14,8 @@ import { aisleIcon, formatMoney, isSellable, visibleCategories } from '../data/g
  */
 const CategoryStrip = ({ products = [] }) => {
   const categories = useSelector((state) => state.categories.items)
+  const home = useSelector((state) => state.settings.values.home)
+  const label = (key) => copyOf(home, 'labels', key)
   const aisles = visibleCategories(categories)
 
   // One pass: cheapest sellable price and a usable photo per aisle.
@@ -57,7 +60,7 @@ const CategoryStrip = ({ products = [] }) => {
 
               {row.count > 0 && (
                 <span className="collection-card__count">
-                  {row.count} item{row.count === 1 ? '' : 's'}
+                  {fillText(label('aisleCount'), { count: row.count })}
                 </span>
               )}
 
@@ -69,10 +72,10 @@ const CategoryStrip = ({ products = [] }) => {
             <span className="collection-card__name">{c.name}</span>
             <span className="collection-card__from">
               {row.from !== null
-                ? `From ${formatMoney(row.from)}`
+                ? fillText(label('aisleFrom'), { price: formatMoney(row.from) })
                 : row.count
-                ? 'Back in stock soon'
-                : 'Coming soon'}
+                ? label('aisleRestock')
+                : label('aisleSoon')}
             </span>
           </Link>
         )

@@ -43,7 +43,32 @@ export const HOME_ICONS = [
   "bx bx-home-smile",
 ];
 
+/**
+ * Every block the home page can draw, in the default order. The shopkeeper
+ * reorders them in the dashboard; showing/hiding lives in `sections`.
+ */
+export const HOME_ORDER = [
+  "promise",
+  "aisles",
+  "offers",
+  "deals",
+  "fresh",
+  "steps",
+  "promo",
+  "blog",
+  "everything",
+  "closer",
+];
+
 export const DEFAULT_HOME = {
+  // Browser tab and search-result text. {store} is the store name.
+  seo: {
+    title: "{store} — fresh food, delivered today",
+    description: "Fruit, vegetables, dairy, bakery and the full weekly shop, delivered the same day.",
+  },
+
+  order: HOME_ORDER,
+
   hero: {
     // When on, a "% OFF" slide is generated from the deepest real markdown and
     // shown first. It disappears by itself once nothing is reduced.
@@ -77,6 +102,27 @@ export const DEFAULT_HOME = {
         image: "",
       },
     ],
+    // Copy of the generated deal slide. {pct} is the deepest real markdown.
+    deal: {
+      kicker: "Limited time only",
+      display: "{pct}% OFF",
+      script: "Weekly market prices*",
+      lead: "Marked-down produce, pantry staples and use-it-soon bakery — reduced while stock lasts.",
+      ctaLabel: "Shop the deals",
+    },
+    // {time} is the time left before the same-day cut-off, e.g. "2h 15m".
+    countdownText: "{time} left to order for today",
+    dealsLinkLabel: "See this week's deals",
+    // The priced basket shown when a slide has no picture and no product photos exist.
+    panel: {
+      title: "Today's basket",
+      countNote: "{count} product{s} in stock",
+      subtotalLabel: "Subtotal",
+    },
+    badges: {
+      eta: { icon: "bx bx-cycling", title: "Delivered today", note: "Order by {cutoff}" },
+      trust: { icon: "bx bx-check-shield", title: "Freshness promise", note: "Not fresh? Replaced" },
+    },
   },
 
   promises: [
@@ -113,18 +159,32 @@ export const DEFAULT_HOME = {
   // Heading copy per home section. Keys match HOME_SECTIONS in the settings
   // slice, so switching a section off and renaming it live side by side.
   headings: {
-    aisles: { kicker: "Shop by aisle", title: "Explore our collections", note: "", linkLabel: "View all aisles" },
-    deals: { kicker: "Reduced this week", title: "Deals this week", note: "Marked down and use-it-soon", linkLabel: "See all" },
-    fresh: { kicker: "Just landed", title: "Fresh in today", note: "Newest on the shelf", linkLabel: "See all" },
-    steps: { kicker: "How it works", title: "From basket to doorstep, today", note: "", linkLabel: "" },
-    everything: { kicker: "In store now", title: "Popular in store", note: "", linkLabel: "Shop all" },
-    blog: { kicker: "Reading", title: "From the blog", note: "Recipes and seasonal notes", linkLabel: "All articles" },
+    aisles: { kicker: "Shop by aisle", title: "Explore our collections", note: "", linkLabel: "View all aisles", linkHref: "/catalog" },
+    deals: { kicker: "Reduced this week", title: "Deals this week", note: "Marked down and use-it-soon", linkLabel: "See all", linkHref: "/deals" },
+    fresh: { kicker: "Just landed", title: "Fresh in today", note: "Newest on the shelf", linkLabel: "See all", linkHref: "/catalog" },
+    steps: { kicker: "How it works", title: "From basket to doorstep, today", note: "", linkLabel: "", linkHref: "" },
+    // A blank note here counts the catalogue, using labels.everythingCount.
+    everything: { kicker: "In store now", title: "Popular in store", note: "", linkLabel: "Shop all", linkHref: "/catalog" },
+    blog: { kicker: "Reading", title: "From the blog", note: "Recipes and seasonal notes", linkLabel: "All articles", linkHref: "/posts" },
   },
 
   mosaic: {
     // Auto tiles follow the shelves: deepest markdown, the deals shelf, a
     // stocked aisle and the newest arrival. Turn it off to write all four.
     auto: true,
+    ctaLabel: "Shop now",
+    // Labels on the automatic tiles. {pct} is the real markdown. When nothing
+    // is reduced, the automatic mode borrows the hand-written tiles below.
+    autoCopy: {
+      dealKicker: "Special deal",
+      dealHeadline: "{pct}%",
+      dealNote: "off",
+      saveKicker: "This week in store",
+      saveTitle: "Save up to",
+      saveHeadline: "{pct}% OFF",
+      featureKicker: "Picked for you",
+      newKicker: "New arrival",
+    },
     tiles: [
       {
         id: "tile-1",
@@ -216,11 +276,27 @@ export const DEFAULT_HOME = {
 
   closer: {
     title: "Ready when you are",
+    // Blank uses bodyStocked / bodyEmpty, which count the shelf.
     body: "",
+    bodyStocked: "{count} product{s} on the shelf, delivered the same day.",
+    bodyEmpty: "The shelves are being stocked — check back shortly.",
     primaryLabel: "Start shopping",
     primaryHref: "/catalog",
     ghostLabel: "Talk to us",
     ghostHref: "/contact",
+  },
+
+  // Small words around the shelves. {count}, {s} (plural "s"), {price} and
+  // {minutes} are filled in from live data.
+  labels: {
+    allTab: "Everything",
+    everythingCount: "{count} product{s} in the shop",
+    aisleCount: "{count} item{s}",
+    aisleFrom: "From {price}",
+    aisleRestock: "Back in stock soon",
+    aisleSoon: "Coming soon",
+    readingTime: "{minutes} min read",
+    readMore: "Read article",
   },
 };
 
@@ -267,11 +343,31 @@ export function withHomeDefaults(stored = {}) {
 
   const list = (value, fallback) => (Array.isArray(value) && value.length ? value : fallback);
 
+  // Known blocks only, each once; a block added in a later release joins at
+  // its default position rather than vanishing from older saved orders.
+  const savedOrder = (Array.isArray(s.order) ? s.order : []).filter(
+    (key, i, all) => HOME_ORDER.includes(key) && all.indexOf(key) === i
+  );
+  const order = [...savedOrder];
+  HOME_ORDER.forEach((key, i) => {
+    if (order.includes(key)) return;
+    const before = HOME_ORDER.slice(0, i).reverse().find((k) => order.includes(k));
+    order.splice(before ? order.indexOf(before) + 1 : 0, 0, key);
+  });
+
   return {
+    seo: { ...d.seo, ...(s.seo || {}) },
+    order,
     hero: {
       ...d.hero,
       ...(s.hero || {}),
       slides: list(s.hero?.slides, d.hero.slides),
+      deal: { ...d.hero.deal, ...(s.hero?.deal || {}) },
+      panel: { ...d.hero.panel, ...(s.hero?.panel || {}) },
+      badges: {
+        eta: { ...d.hero.badges.eta, ...(s.hero?.badges?.eta || {}) },
+        trust: { ...d.hero.badges.trust, ...(s.hero?.badges?.trust || {}) },
+      },
     },
     promises: list(s.promises, d.promises),
     headings: Object.fromEntries(
@@ -280,6 +376,7 @@ export function withHomeDefaults(stored = {}) {
     mosaic: {
       ...d.mosaic,
       ...(s.mosaic || {}),
+      autoCopy: { ...d.mosaic.autoCopy, ...(s.mosaic?.autoCopy || {}) },
       tiles: list(s.mosaic?.tiles, d.mosaic.tiles),
     },
     steps: list(s.steps, d.steps),
@@ -289,7 +386,26 @@ export function withHomeDefaults(stored = {}) {
       points: list(s.rewards?.points, d.rewards.points),
     },
     closer: { ...d.closer, ...(s.closer || {}) },
+    labels: { ...d.labels, ...(s.labels || {}) },
   };
+}
+
+/**
+ * Fill `{name}` placeholders from `vars`. A numeric `count` also provides
+ * `{s}`, so "{count} item{s}" reads "1 item" / "3 items".
+ */
+export function fillText(text, vars = {}) {
+  const all = { ...vars };
+  if (typeof vars.count === "number" && all.s === undefined) all.s = vars.count === 1 ? "" : "s";
+  return String(text ?? "").replace(/\{(\w+)\}/g, (match, key) =>
+    all[key] === undefined || all[key] === null ? match : String(all[key])
+  );
+}
+
+/** A field from one of the `home` groups, falling back to the shipped copy when blank. */
+export function copyOf(home, group, key) {
+  const fallback = DEFAULT_HOME[group]?.[key];
+  return orDefault(home?.[group]?.[key], fallback);
 }
 
 /** Heading copy for a section, with the defaults filling any blank field. */
@@ -301,5 +417,6 @@ export function headingOf(home, key) {
     title: orDefault(stored.title, fallback.title),
     note: isBlank(stored.note) ? fallback.note : stored.note,
     linkLabel: orDefault(stored.linkLabel, fallback.linkLabel),
+    linkHref: orDefault(stored.linkHref, fallback.linkHref),
   };
 }

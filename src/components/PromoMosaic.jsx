@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useSelector } from 'react-redux'
 
 import { aisleIcon, discountPercent, isSellable, visibleCategories } from '../data/grocery'
-import { DEFAULT_HOME } from '../data/home'
+import { DEFAULT_HOME, fillText, orDefault } from '../data/home'
 
 const CLASS_BY_VARIANT = {
   tall: 'promo-tile--tall',
@@ -27,6 +27,7 @@ export default function PromoMosaic() {
   const { pages, home } = useSelector((state) => state.settings.values)
 
   const config = home?.mosaic || DEFAULT_HOME.mosaic
+  const ctaLabel = orDefault(config.ctaLabel, DEFAULT_HOME.mosaic.ctaLabel)
 
   const tiles = useMemo(() => {
     // ---- tiles written in the dashboard ----
@@ -49,6 +50,15 @@ export default function PromoMosaic() {
     // ---- tiles derived from the shelves ----
     const sellable = products.filter(isSellable)
     if (!sellable.length) return []
+
+    const copy = (key, vars) =>
+      fillText(orDefault(config.autoCopy?.[key], DEFAULT_HOME.mosaic.autoCopy[key]), vars)
+
+    // When there is nothing live to show in a slot, the hand-written tile for
+    // that slot fills it — so the fallback wording is the shopkeeper's too.
+    const written = (variant) =>
+      (config.tiles || []).find((t) => t.variant === variant && (t.title || '').trim()) ||
+      DEFAULT_HOME.mosaic.tiles.find((t) => t.variant === variant)
 
     const dealsHref = pages?.deals === false ? '/catalog' : '/deals'
     const aisles = visibleCategories(categories)
@@ -77,10 +87,10 @@ export default function PromoMosaic() {
         ? {
             id: 'best',
             className: CLASS_BY_VARIANT.tall,
-            kicker: 'Special deal',
+            kicker: copy('dealKicker', { pct: best.pct }),
             title: best.product.title,
-            headline: `${best.pct}%`,
-            headlineNote: 'off',
+            headline: copy('dealHeadline', { pct: best.pct }),
+            headlineNote: copy('dealNote', { pct: best.pct }),
             image: best.product.images?.[0],
             icon: aisleIcon(best.product.categorySlug),
             href: `/product/${best.product.slug}`,
@@ -88,26 +98,40 @@ export default function PromoMosaic() {
         : {
             id: 'basket',
             className: CLASS_BY_VARIANT.tall,
-            kicker: 'Weekly shop',
-            title: 'Everything on the list',
-            headline: 'One',
-            headlineNote: 'delivery',
-            image: newest?.images?.[0],
-            icon: 'bx bx-basket',
-            href: '/catalog',
+            kicker: written('tall').kicker,
+            title: written('tall').title,
+            headline: written('tall').headline,
+            headlineNote: written('tall').headlineNote,
+            image: written('tall').image || newest?.images?.[0],
+            icon: written('tall').icon || 'bx bx-basket',
+            href: written('tall').href || '/catalog',
           }
     )
 
-    out.push({
-      id: 'wide',
-      className: CLASS_BY_VARIANT.wide,
-      kicker: 'This week in store',
-      title: deals.length ? 'Save up to' : 'Fresh in every',
-      headline: deals.length ? `${best.pct}% OFF` : 'Morning',
-      image: runnerUp?.product.images?.[0] || newest?.images?.[0],
-      icon: deals.length ? 'bx bx-purchase-tag' : 'bx bx-time-five',
-      href: deals.length ? dealsHref : '/catalog',
-    })
+    out.push(
+      deals.length
+        ? {
+            id: 'wide',
+            className: CLASS_BY_VARIANT.wide,
+            kicker: copy('saveKicker', { pct: best.pct }),
+            title: copy('saveTitle', { pct: best.pct }),
+            headline: copy('saveHeadline', { pct: best.pct }),
+            image: runnerUp?.product.images?.[0] || newest?.images?.[0],
+            icon: 'bx bx-purchase-tag',
+            href: dealsHref,
+          }
+        : {
+            id: 'wide',
+            className: CLASS_BY_VARIANT.wide,
+            kicker: written('wide').kicker,
+            title: written('wide').title,
+            headline: written('wide').headline,
+            headlineNote: written('wide').headlineNote,
+            image: written('wide').image || newest?.images?.[0],
+            icon: written('wide').icon || 'bx bx-time-five',
+            href: written('wide').href || '/catalog',
+          }
+    )
 
     // The dark tile always appears — an empty cell in the middle row reads as a
     // broken grid. With no stocked aisle to feature it carries a promise, which
@@ -117,21 +141,25 @@ export default function PromoMosaic() {
       out.push({
         id: 'dark',
         className: CLASS_BY_VARIANT.dark,
-        kicker: 'Picked for you',
+        kicker: copy('featureKicker'),
         title: feature.name,
         image: featured?.images?.[0],
         icon: aisleIcon(feature.slug),
         href: `/catalog?category=${feature.slug}`,
       })
     } else {
+      const tile = written('dark')
+      const href = tile.href || '/catalog'
       out.push({
         id: 'dark',
         className: CLASS_BY_VARIANT.dark,
-        kicker: 'No card needed',
-        title: 'Cash on delivery',
-        image: null,
-        icon: 'bx bx-wallet',
-        href: pages?.policy === false ? '/catalog' : '/policy?tab=cod',
+        kicker: tile.kicker,
+        title: tile.title,
+        headline: tile.headline,
+        headlineNote: tile.headlineNote,
+        image: tile.image || null,
+        icon: tile.icon || 'bx bx-wallet',
+        href: pages?.policy === false && href.startsWith('/policy') ? '/catalog' : href,
       })
     }
 
@@ -139,7 +167,7 @@ export default function PromoMosaic() {
       out.push({
         id: 'new',
         className: CLASS_BY_VARIANT.right,
-        kicker: 'New arrival',
+        kicker: copy('newKicker'),
         title: newest.title,
         image: newest.images?.[0],
         icon: aisleIcon(newest.categorySlug),
@@ -181,7 +209,7 @@ export default function PromoMosaic() {
             )}
 
             <span className="promo-tile__cta">
-              Shop now
+              {ctaLabel}
               <i className="bx bx-right-arrow-alt"></i>
             </span>
           </span>

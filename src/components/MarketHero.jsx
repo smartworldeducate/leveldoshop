@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useSelector } from 'react-redux'
 
 import { discountPercent, formatMoney, isSellable, packLabel, visibleCategories } from '../data/grocery'
-import { DEFAULT_HOME, orDefault } from '../data/home'
+import { DEFAULT_HOME, fillText, orDefault } from '../data/home'
 
 /** Up to three photographed products, starting at `from` so slides differ. */
 const pickArt = (products, from) => {
@@ -44,6 +44,10 @@ export default function MarketHero() {
   const sellable = useMemo(() => products.filter(isSellable), [products])
   const cutoff = contact?.orderCutoff || '4pm'
   const heroContent = home?.hero || DEFAULT_HOME.hero
+  // Copy of the generated pieces — blank fields fall back to the shipped wording.
+  const heroText = (group, key) => orDefault(heroContent[group]?.[key], DEFAULT_HOME.hero[group][key])
+  const badge = (which, key) =>
+    orDefault(heroContent.badges?.[which]?.[key], DEFAULT_HOME.hero.badges[which][key])
   const autoplayMs = Number(heroContent.autoplayMs) > 0 ? Number(heroContent.autoplayMs) : 7000
 
   // Time left to order for same-day delivery. Client-only: rendering a clock on
@@ -78,11 +82,11 @@ export default function MarketHero() {
     if (heroContent.autoDeal !== false && bestPct >= 5) {
       list.push({
         id: 'auto-deal',
-        kicker: 'Limited time only',
-        display: `${bestPct}% OFF`,
-        script: 'Weekly market prices*',
-        lead: 'Marked-down produce, pantry staples and use-it-soon bakery — reduced while stock lasts.',
-        cta: 'Shop the deals',
+        kicker: fillText(heroText('deal', 'kicker'), { pct: bestPct }),
+        display: fillText(heroText('deal', 'display'), { pct: bestPct }),
+        script: fillText(heroText('deal', 'script'), { pct: bestPct }),
+        lead: fillText(heroText('deal', 'lead'), { pct: bestPct }),
+        cta: fillText(heroText('deal', 'ctaLabel'), { pct: bestPct }),
         href: dealsHref,
         image: '',
       })
@@ -109,17 +113,19 @@ export default function MarketHero() {
       })
     })
 
-    // A shopkeeper who deletes every slide still gets a working hero.
+    // A shopkeeper who deletes every slide still gets a working hero, built
+    // from the first shipped slide.
     if (!list.length) {
+      const first = DEFAULT_HOME.hero.slides[0]
       list.push({
         id: 'fallback',
-        kicker: tagline || `Order by ${cutoff}`,
+        kicker: tagline || first.kicker,
         countdown: true,
-        display: 'Same day',
-        script: 'Picked this morning, on your table tonight',
+        display: first.display,
+        script: first.script,
         lead: '',
-        cta: 'Start shopping',
-        href: '/catalog',
+        cta: first.ctaLabel,
+        href: first.ctaHref,
         image: '',
       })
     }
@@ -156,9 +162,10 @@ export default function MarketHero() {
   const countdownLabel =
     countdown === null
       ? null
-      : countdown >= 60
-      ? `${Math.floor(countdown / 60)}h ${countdown % 60}m left to order for today`
-      : `${countdown}m left to order for today`
+      : fillText(orDefault(heroContent.countdownText, DEFAULT_HOME.hero.countdownText), {
+          time: countdown >= 60 ? `${Math.floor(countdown / 60)}h ${countdown % 60}m` : `${countdown}m`,
+          cutoff,
+        })
 
   // Pointer parallax, in CSS custom properties so the animation stays on the
   // compositor. Ignored on touch, where there is no pointer to follow.
@@ -210,7 +217,7 @@ export default function MarketHero() {
 
           {pages?.deals !== false && slides[0]?.id === 'auto-deal' && slide.id !== 'auto-deal' && (
             <Link href="/deals" className="hero__ghost">
-              See this week&apos;s deals
+              {orDefault(heroContent.dealsLinkLabel, DEFAULT_HOME.hero.dealsLinkLabel)}
             </Link>
           )}
         </div>
@@ -288,8 +295,8 @@ export default function MarketHero() {
             <div className="hero__panel__head">
               {/* No icon here: the delivery badge already sits in this corner */}
               <span>
-                <strong>Today&apos;s basket</strong>
-                <small>{sellable.length} products in stock</small>
+                <strong>{heroText('panel', 'title')}</strong>
+                <small>{fillText(heroText('panel', 'countNote'), { count: sellable.length })}</small>
               </span>
             </div>
 
@@ -307,23 +314,23 @@ export default function MarketHero() {
             </ul>
 
             <div className="hero__panel__foot">
-              <span>Subtotal</span>
+              <span>{heroText('panel', 'subtotalLabel')}</span>
               <strong>{formatMoney(previewTotal)}</strong>
             </div>
 
             <div className="hero__badge hero__badge--eta">
-              <i className="bx bx-cycling"></i>
+              <i className={badge('eta', 'icon')}></i>
               <span>
-                <strong>Delivered today</strong>
-                <small>Order by {cutoff}</small>
+                <strong>{fillText(badge('eta', 'title'), { cutoff })}</strong>
+                <small>{fillText(badge('eta', 'note'), { cutoff })}</small>
               </span>
             </div>
 
             <div className="hero__badge hero__badge--trust">
-              <i className="bx bx-check-shield"></i>
+              <i className={badge('trust', 'icon')}></i>
               <span>
-                <strong>Freshness promise</strong>
-                <small>Not fresh? Replaced</small>
+                <strong>{fillText(badge('trust', 'title'), { cutoff })}</strong>
+                <small>{fillText(badge('trust', 'note'), { cutoff })}</small>
               </span>
             </div>
           </div>

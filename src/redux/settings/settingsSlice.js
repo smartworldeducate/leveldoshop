@@ -19,16 +19,18 @@ export const TOGGLEABLE_PAGES = [
   { key: "policy", label: "Policies", href: "/policy", note: "Delivery, freshness, payment" },
 ];
 
-/** Home-page blocks, in the order they render. */
+/** Home-page blocks, in their default order (reordered at /dashboard/home). */
 export const HOME_SECTIONS = [
   { key: "promise", label: "Promise strip", note: "Delivery · freshness · payment · rewards" },
   { key: "aisles", label: "Explore our collections", note: "Aisle cards with an entry price" },
   { key: "offers", label: "Offer mosaic", note: "Four tiles built from live deals and arrivals" },
   { key: "deals", label: "Deals rail", note: "Only appears when something is reduced" },
   { key: "fresh", label: "Fresh in today", note: "Newest products" },
+  { key: "steps", label: "How it works", note: "Basket-to-doorstep steps" },
   { key: "promo", label: "Rewards banner", note: "Join-free promo band" },
   { key: "blog", label: "From the blog", note: "Three latest posts" },
   { key: "everything", label: "Popular in store", note: "A slice of the catalogue" },
+  { key: "closer", label: "Closing invitation", note: "Last call to action on the page" },
 ];
 
 /** Shown on the contact page and in the footer — blank fields simply hide. */
