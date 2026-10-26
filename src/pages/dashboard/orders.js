@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -38,6 +39,14 @@ export default function OrdersPage() {
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // Deep link from the header search: ?q= filters, and an exact order id opens it.
+  const router = useRouter();
+  useEffect(() => {
+    const q = typeof router.query.q === "string" ? router.query.q : "";
+    setQuery(q);
+    if (q) setExpanded(q);
+  }, [router.query.q]);
 
   const pending = orders.filter((o) => !isCompleted(o));
   const revenue = orders.reduce((sum, o) => sum + orderTotal(o), 0);

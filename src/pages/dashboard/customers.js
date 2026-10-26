@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -21,6 +22,12 @@ export default function CustomersPage() {
   const orders = useSelector((s) => s.adminOrders.items);
   const loading = useSelector((s) => s.adminOrders.status === "loading");
   const [query, setQuery] = useState("");
+
+  // Deep link from the header search (?q=).
+  const router = useRouter();
+  useEffect(() => {
+    setQuery(typeof router.query.q === "string" ? router.query.q : "");
+  }, [router.query.q]);
 
   const customers = useMemo(() => customersFromOrders(orders), [orders]);
 

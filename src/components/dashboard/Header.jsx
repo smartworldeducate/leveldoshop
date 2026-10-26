@@ -1,26 +1,10 @@
-import { useState } from "react";
-import { useRouter } from "next/router";
-import { ExternalLink, Menu, Search } from "lucide-react";
+import { ExternalLink, Menu } from "lucide-react";
 import { FOCUS } from "./theme";
+import GlobalSearch from "./GlobalSearch";
 import { initialsOf } from "@/lib/admins";
 
-/**
- * Page header. The search box is a jump-to-catalogue box: submitting hands the
- * term to the Products page, which owns the actual filtering.
- */
+/** Page header: title, the global search, page actions and the account chip. */
 export default function Header({ title, eyebrow, actions, user, onOpenMenu }) {
-  const router = useRouter();
-  const [term, setTerm] = useState("");
-
-  const submit = (e) => {
-    e.preventDefault();
-    const q = term.trim();
-    // An empty submit is how the term gets taken off again, so it still has to
-    // navigate — swallowing it left the Products list stuck on the last search.
-    router.push(q ? `/dashboard/products?q=${encodeURIComponent(q)}` : "/dashboard/products");
-    setTerm("");
-  };
-
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3">
@@ -39,18 +23,7 @@ export default function Header({ title, eyebrow, actions, user, onOpenMenu }) {
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3">
-        <form
-          onSubmit={submit}
-          className="hidden h-11 w-64 items-center gap-2 rounded-full bg-white px-4 shadow-[0_8px_24px_-12px_rgba(80,70,150,0.35)] md:flex"
-        >
-          <Search className="h-4 w-4 shrink-0 text-slate-400" />
-          <input
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Search products"
-            className={`w-full bg-transparent text-sm text-slate-600 placeholder:text-slate-400 focus:outline-none ${FOCUS}`}
-          />
-        </form>
+        <GlobalSearch user={user} />
 
         {actions}
 

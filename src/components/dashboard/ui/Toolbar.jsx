@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { FOCUS } from "../theme";
 
 /** Filter row above a table: pills on the left, search + actions on the right. */
@@ -16,9 +16,21 @@ export function SearchInput({ value, onChange, placeholder = "Search", className
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => e.key === "Escape" && value && onChange("")}
         placeholder={placeholder}
+        aria-label={placeholder}
         className={`w-full bg-transparent text-sm text-slate-600 placeholder:text-slate-400 focus:outline-none ${FOCUS}`}
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-white hover:text-slate-600"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }
