@@ -1,0 +1,807 @@
+// ============================================================
+// My orders — a shopper's order history and return requests.
+// Sizes are px: the storefront root is 13px, so rem runs small.
+// ============================================================
+
+.shop-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: $radius-pill;
+    background: $grad-main;
+    color: $txt-white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 14px 26px -14px rgba($shadow-color, 0.95);
+    transition: transform 0.2s ease, filter 0.2s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    &--block {
+        width: 100%;
+    }
+
+    &--ghost {
+        background: $main-bg;
+        color: $main-color;
+        box-shadow: inset 0 0 0 1px $main-soft;
+    }
+}
+
+.my-orders {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 60px;
+
+    &__hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 34px 36px;
+        border-radius: $radius-lg;
+        background: $grad-hero;
+        color: $txt-white;
+        box-shadow: $box-shadow;
+
+        h1 {
+            font-family: $font-display;
+            font-size: 34px;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+
+        p {
+            margin-top: 8px;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        dl {
+            display: flex;
+            gap: 12px;
+        }
+
+        dl > div {
+            min-width: 104px;
+            padding: 12px 16px;
+            border-radius: $radius;
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        dt {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        dd {
+            margin-top: 2px;
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+    }
+
+    &__hero--slim {
+        padding: 26px 36px;
+    }
+
+    &__layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        align-items: start;
+        gap: 18px;
+    }
+
+    &__side {
+        position: sticky;
+        top: calc(#{$header-shrink-height} + 16px);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 60px 24px;
+        border-radius: $radius-lg;
+        background: $main-bg;
+        text-align: center;
+        box-shadow: $box-shadow;
+
+        svg {
+            color: $main-color;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: $txt-main-color;
+        }
+
+        p {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: $txt-second-color;
+        }
+    }
+}
+
+.my-order {
+    padding: 24px;
+    border-radius: $radius-lg;
+    background: $main-bg;
+    box-shadow: $box-shadow;
+
+    &--skeleton {
+        height: 220px;
+        background: linear-gradient(100deg, $main-bg 30%, $app-bg 50%, $main-bg 70%);
+        background-size: 200% 100%;
+        animation: my-order-shimmer 1.4s linear infinite;
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    &__id {
+        display: block;
+        font-size: 17px;
+        font-weight: 700;
+        color: $txt-main-color;
+    }
+
+    &__date {
+        display: block;
+        margin-top: 2px;
+        font-size: 13px;
+        color: $txt-second-color;
+    }
+
+    &__status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: $radius-pill;
+        font-size: 13px;
+        font-weight: 700;
+
+        &--done {
+            background: #e7f8ef;
+            color: #0c8a55;
+        }
+
+        &--pending {
+            background: #fef3d9;
+            color: #a86a00;
+        }
+
+        &--problem {
+            background: #ffe9ec;
+            color: #be123c;
+        }
+
+        &--cancelled {
+            background: #eef0f5;
+            color: #565b70;
+        }
+    }
+
+    &__items {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 18px;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        div {
+            flex: 1;
+            min-width: 0;
+        }
+
+        p {
+            overflow: hidden;
+            font-size: 15px;
+            font-weight: 600;
+            color: $txt-main-color;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        span {
+            font-size: 13px;
+            color: $txt-second-color;
+        }
+
+        strong {
+            font-size: 15px;
+            font-weight: 700;
+            color: $txt-main-color;
+        }
+    }
+
+    &__short {
+        display: block;
+        margin-top: 2px;
+        font-size: 13px;
+        font-style: normal;
+        font-weight: 600;
+        color: #be123c;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px solid $app-bg;
+    }
+
+    &__total {
+        span {
+            display: block;
+            font-size: 13px;
+            color: $txt-second-color;
+        }
+
+        strong {
+            font-size: 21px;
+            font-weight: 700;
+            color: $txt-main-color;
+        }
+
+        em {
+            margin-left: 8px;
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 600;
+            color: #0c8a55;
+        }
+    }
+
+    &__action {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+
+        span {
+            font-size: 13px;
+            color: $txt-second-color;
+        }
+    }
+
+    &__hint {
+        font-size: 13px;
+        color: $txt-second-color;
+
+        a {
+            color: $main-color;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+    }
+}
+
+.return-tracker {
+    margin-top: 18px;
+    padding: 18px 20px;
+    border-radius: $radius;
+    background: #f4f7fd;
+
+    &--rejected {
+        background: #f5f5f8;
+    }
+
+    &--problem {
+        background: #fff4f5;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+
+        h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: $txt-main-color;
+        }
+
+        p {
+            margin-top: 3px;
+            font-size: 13px;
+            color: $txt-second-color;
+        }
+
+        strong {
+            font-size: 16px;
+            font-weight: 700;
+            color: $main-dark;
+        }
+    }
+
+    &--rejected &__head strong {
+        color: $txt-second-color;
+        text-decoration: line-through;
+    }
+
+    &__note {
+        margin-top: 10px;
+        font-size: 14px;
+        font-style: italic;
+        color: $txt-main-color;
+    }
+
+    &__steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin-top: 18px;
+        list-style: none;
+
+        &--five {
+            grid-template-columns: repeat(5, 1fr);
+        }
+    }
+}
+
+.return-step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+
+    // The line back to the previous step, coloured by this step's state.
+    &:not(:first-child)::before {
+        content: "";
+        position: absolute;
+        top: 15px;
+        right: 50%;
+        width: 100%;
+        height: 3px;
+        background: $main-soft;
+    }
+
+    &--done:not(:first-child)::before,
+    &--current:not(:first-child)::before {
+        background: $main-color;
+    }
+
+    &__dot {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: $main-bg;
+        color: $txt-second-color;
+        box-shadow: inset 0 0 0 2px $main-soft;
+    }
+
+    &--done &__dot {
+        background: $main-color;
+        color: $txt-white;
+        box-shadow: none;
+    }
+
+    &--current &__dot {
+        background: $grad-main;
+        color: $txt-white;
+        box-shadow: 0 0 0 5px rgba($main-color, 0.18);
+    }
+
+    &--problem:not(:first-child)::before {
+        background: $main-color;
+    }
+
+    &--problem &__dot {
+        background: #e11d48;
+        color: $txt-white;
+        box-shadow: 0 0 0 5px rgba(#e11d48, 0.18);
+    }
+
+    &--problem &__label {
+        color: #be123c;
+    }
+
+    &__label {
+        font-size: 12px;
+        font-weight: 600;
+        color: $txt-second-color;
+    }
+
+    &--done &__label,
+    &--current &__label {
+        color: $txt-main-color;
+    }
+}
+
+.item-thumb {
+    flex-shrink: 0;
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: $main-soft;
+
+    &--empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $main-color;
+    }
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: $main-color;
+}
+
+.side-card {
+    padding: 22px;
+    border-radius: $radius-lg;
+    background: $main-bg;
+    box-shadow: $box-shadow;
+
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        color: $txt-main-color;
+
+        svg {
+            color: $main-color;
+        }
+    }
+
+    > p {
+        margin-top: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: $txt-second-color;
+
+        a {
+            color: $main-color;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+    }
+}
+
+.how-returns {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+    list-style: none;
+
+    li {
+        display: flex;
+        gap: 12px;
+    }
+
+    li > span {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: $main-soft;
+        color: $main-dark;
+    }
+
+    h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: $txt-main-color;
+    }
+
+    p {
+        margin-top: 2px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: $txt-second-color;
+    }
+}
+
+.return-form {
+    padding: 24px;
+    border-radius: $radius-lg;
+    background: $main-bg;
+    box-shadow: $box-shadow;
+
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        font-size: 17px;
+        font-weight: 700;
+        color: $txt-main-color;
+
+        > span {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: $grad-main;
+            color: $txt-white;
+            font-size: 13px;
+        }
+
+        em {
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 500;
+            color: $txt-second-color;
+        }
+    }
+
+    textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid $main-soft;
+        border-radius: 14px;
+        font-size: 14px;
+        color: $txt-main-color;
+        resize: vertical;
+
+        &:focus {
+            border-color: $main-color;
+            outline: none;
+        }
+    }
+}
+
+.return-summary {
+    ul {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 14px;
+        color: $txt-main-color;
+    }
+
+    li strong {
+        font-weight: 700;
+    }
+
+    &__total {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 16px 0;
+        padding-top: 16px;
+        border-top: 1px solid $app-bg;
+
+        span {
+            font-size: 14px;
+            color: $txt-second-color;
+        }
+
+        strong {
+            font-size: 26px;
+            font-weight: 700;
+            color: $txt-main-color;
+        }
+    }
+
+    small {
+        display: block;
+        margin-top: 8px;
+        font-size: 12px;
+        color: $txt-second-color;
+        text-align: center;
+    }
+}
+
+.return-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-radius: 16px;
+        background: #f6f8fc;
+        transition: background 0.15s ease, box-shadow 0.15s ease;
+
+        &.is-selected {
+            background: #e9effb;
+            box-shadow: inset 0 0 0 1px rgba($main-color, 0.4);
+        }
+    }
+
+    li > div:not(.qty-stepper) {
+        flex: 1;
+        min-width: 0;
+    }
+
+    p {
+        overflow: hidden;
+        font-size: 14px;
+        font-weight: 600;
+        color: $txt-main-color;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    li > div > span {
+        font-size: 12px;
+        color: $txt-second-color;
+    }
+}
+
+.qty-stepper {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: $radius-pill;
+    background: $main-soft;
+
+    button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: $main-bg;
+        color: $main-dark;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+
+    > span {
+        min-width: 26px;
+        font-size: 14px;
+        font-weight: 700;
+        color: $txt-main-color;
+        text-align: center;
+    }
+}
+
+.return-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    button {
+        padding: 9px 14px;
+        border: 0;
+        border-radius: $radius-pill;
+        background: #f2f6fc;
+        color: $txt-main-color;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        &:hover {
+            color: $main-color;
+        }
+
+        &.is-selected {
+            background: $grad-main;
+            color: $txt-white;
+        }
+    }
+}
+
+@keyframes my-order-shimmer {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .my-orders__layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .my-orders__side {
+        position: static;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .my-orders__hero {
+        padding: 24px 20px;
+
+        h1 {
+            font-size: 28px;
+        }
+    }
+
+    .my-order,
+    .return-form,
+    .side-card {
+        padding: 18px;
+    }
+
+    .return-tracker {
+        padding: 14px;
+    }
+
+    .return-step__label {
+        font-size: 11px;
+    }
+
+    .return-lines li {
+        flex-wrap: wrap;
+    }
+}

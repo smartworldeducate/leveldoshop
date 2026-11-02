@@ -79,6 +79,7 @@ export default function SettingsPage() {
           { value: "sections", label: "Home sections", count: HOME_SECTIONS.length - sectionsOff },
           { value: "contact", label: "Contact details" },
           { value: "store", label: "Store identity" },
+          { value: "returns", label: "Returns" },
         ]}
       />
 
@@ -180,6 +181,38 @@ export default function SettingsPage() {
                 value={draft.tagline || ""}
                 onChange={(e) => setDraft((d) => ({ ...d, tagline: e.target.value }))}
                 placeholder={DEFAULT_SETTINGS.tagline}
+              />
+            </Field>
+          </div>
+        </Card>
+      )}
+
+      {tab === "returns" && (
+        <Card>
+          <CardHeader
+            title="Customer returns"
+            subtitle="What shoppers can do from their My orders page. Staff can start a return from Orders at any time."
+          />
+          <div className="mt-5 grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+            <SwitchRow
+              title="Online return requests"
+              note="Off: shoppers are asked to contact you instead"
+              disabled={loading}
+              checked={draft.returns?.enabled !== false}
+              onChange={(on) => setDraft((d) => ({ ...d, returns: { ...d.returns, enabled: on } }))}
+            />
+            <Field
+              label="Return window (days after delivery)"
+              hint="1 day matches the 24 hours in your Freshness promise. Change that policy text if you change this."
+            >
+              <Input
+                type="number"
+                min={1}
+                step={1}
+                value={draft.returns?.windowDays ?? ""}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, returns: { ...d.returns, windowDays: Number(e.target.value) } }))
+                }
               />
             </Field>
           </div>

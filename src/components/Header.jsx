@@ -149,6 +149,7 @@ export default function Header() {
                   {accountOpen && (
                     <div className="account-menu">
                       {hasDashboardAccess && <Link href="/dashboard">Dashboard</Link>}
+                      <Link href="/orders">My orders</Link>
                       <Link href="/posts">Blog</Link>
                       <button type="button" onClick={handleLogout}>Log out</button>
                     </div>

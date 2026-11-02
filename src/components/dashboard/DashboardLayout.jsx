@@ -13,8 +13,10 @@ import { auth } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { fetchProducts } from "@/redux/products/productsSlice";
 import { fetchOrders } from "@/redux/admin/ordersSlice";
-import { isCompleted, storeAlerts } from "@/lib/analytics";
+import { storeAlerts } from "@/lib/analytics";
 import { LOW_STOCK_THRESHOLD } from "@/data/grocery";
+import { allReturns, isOpenReturn } from "@/data/returns";
+import { allIssues, isOpenOrder } from "@/data/fulfilment";
 
 const COLLAPSE_KEY = "dashboard:sidebar-collapsed";
 
@@ -69,7 +71,7 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
   }, [allowed, dispatch]);
 
   const counts = useMemo(() => {
-    const pendingOrders = orders.filter((o) => !isCompleted(o)).length;
+    const pendingOrders = orders.filter(isOpenOrder).length;
     const stockAlerts = products.filter(
       (p) => (Number(p.stock) || 0) <= LOW_STOCK_THRESHOLD
     ).length;
@@ -77,6 +79,8 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
       pendingOrders,
       stockAlerts,
       alerts: storeAlerts(orders, products).length,
+      openReturns: allReturns(orders).filter(isOpenReturn).length,
+      openIssues: allIssues(orders).filter((i) => i.status === "open").length,
     };
   }, [orders, products]);
 

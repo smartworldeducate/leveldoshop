@@ -7,7 +7,8 @@ import Badge from "./ui/Badge";
 import { FOCUS } from "./theme";
 import { NAV_ITEMS } from "./nav";
 import { isAdmin } from "@/lib/admins";
-import { customersFromOrders, isCompleted, orderTotal, timeAgo, orderDate } from "@/lib/analytics";
+import { customersFromOrders, orderTotal, timeAgo, orderDate } from "@/lib/analytics";
+import { orderStatusView } from "@/data/fulfilment";
 import { categoryLabel, formatMoney, stockState } from "@/data/grocery";
 
 const LIMITS = { pages: 3, products: 5, orders: 4, customers: 4 };
@@ -135,7 +136,7 @@ export default function GlobalSearch({ user }) {
             key: `order-${o.id}`,
             kind: "order",
             item: o,
-            href: { pathname: "/dashboard/orders", query: { q: o.id } },
+            href: `/dashboard/orders/${o.id}`,
           })),
           ords.total > LIMITS.orders && seeAll("/dashboard/orders", ords.total, "order"),
         ].filter(Boolean),
@@ -440,7 +441,7 @@ function ResultRow({ row, term, categories, selected, onHover, onSelect }) {
 
   if (row.kind === "order") {
     const o = row.item;
-    const done = isCompleted(o);
+    const view = orderStatusView(o);
     return (
       <button {...props}>
         <span className="flex h-9 shrink-0 items-center justify-center rounded-xl bg-[#F6F8FC] px-2 font-mono text-[11px] font-bold text-slate-500">
@@ -455,9 +456,7 @@ function ResultRow({ row, term, categories, selected, onHover, onSelect }) {
             {o.user?.city ? <> · <Highlight text={o.user.city} term={term} /></> : null}
           </span>
         </span>
-        <Badge tone={done ? "success" : "warning"}>
-          {done ? "Completed" : "Pending"}
-        </Badge>
+        <Badge tone={view.tone}>{view.label}</Badge>
       </button>
     );
   }

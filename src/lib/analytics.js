@@ -11,6 +11,17 @@ import {
   categoryLabel,
   expiryState,
 } from "@/data/grocery";
+import { allReturns, isOpenReturn, orderRefunded, RETURN_STATUS } from "@/data/returns";
+import {
+  ISSUE_TYPES,
+  STEP_INFO,
+  allIssues,
+  deliveredQty,
+  isCancelled,
+  isOpenOrder,
+  openIssue,
+  shortValue,
+} from "@/data/fulfilment";
 
 /** Firestore Timestamp | Date | string | number → Date (or null). */
 export function toDate(value) {
@@ -24,6 +35,13 @@ export function toDate(value) {
 export const orderDate = (order) => toDate(order?.createdAt);
 
 export const orderTotal = (order) => Number(order?.totalPrice) || 0;
+
+/**
+ * What the store kept: the order total less undelivered items and refunds, or
+ * nothing for a cancelled order. Every revenue figure uses this.
+ */
+export const orderNet = (order) =>
+  isCancelled(order) ? 0 : orderTotal(order) - shortValue(order) - orderRefunded(order);
 
 export const orderUnits = (order) =>
   (order?.cartItems || []).reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
@@ -77,7 +95,7 @@ export function revenueSeries(orders, rangeKey = "week") {
       const d = orderDate(o);
       if (!d) return;
       const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (buckets.has(key)) buckets.set(key, buckets.get(key) + orderTotal(o));
+      if (buckets.has(key)) buckets.set(key, buckets.get(key) + orderNet(o));
     });
     return { labels, values: [...buckets.values()] };
   }
@@ -98,7 +116,7 @@ export function revenueSeries(orders, rangeKey = "week") {
     const d = orderDate(o);
     if (!d) return;
     const key = dayKey(d);
-    if (buckets.has(key)) buckets.set(key, buckets.get(key) + orderTotal(o));
+    if (buckets.has(key)) buckets.set(key, buckets.get(key) + orderNet(o));
   });
 
   return { labels, values: [...buckets.values()] };
@@ -117,8 +135,8 @@ export function trendVsPrevious(orders, days) {
   (orders || []).forEach((o) => {
     const d = orderDate(o);
     if (!d) return;
-    if (d >= start) current += orderTotal(o);
-    else if (d >= prevStart) previous += orderTotal(o);
+    if (d >= start) current += orderNet(o);
+    else if (d >= prevStart) previous += orderNet(o);
   });
 
   if (!previous) return current ? { percent: 100, up: true } : { percent: 0, up: true };
@@ -129,8 +147,9 @@ export function trendVsPrevious(orders, days) {
 // -------------------- headline numbers -------------------- //
 
 export function storeKpis(orders = [], products = []) {
-  const revenue = orders.reduce((sum, o) => sum + orderTotal(o), 0);
-  const pending = orders.filter((o) => !isCompleted(o));
+  const revenue = orders.reduce((sum, o) => sum + orderNet(o), 0);
+  const pending = orders.filter(isOpenOrder);
+  const live = orders.filter((o) => !isCancelled(o));
   const lowStock = products.filter(
     (p) => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= LOW_STOCK_THRESHOLD
   );
@@ -143,15 +162,15 @@ export function storeKpis(orders = [], products = []) {
 
   return {
     revenue,
-    orders: orders.length,
+    orders: live.length,
     pending: pending.length,
-    completed: orders.length - pending.length,
+    completed: orders.filter(isCompleted).length,
     products: products.length,
     lowStock: lowStock.length,
     outOfStock: outOfStock.length,
     expiring: expiring.length,
     stockValue,
-    averageOrder: orders.length ? revenue / orders.length : 0,
+    averageOrder: live.length ? revenue / live.length : 0,
     trend: trendVsPrevious(orders, 7),
   };
 }
@@ -162,12 +181,13 @@ export function storeKpis(orders = [], products = []) {
 export function topProducts(orders = [], products = [], limit = 5) {
   const byId = new Map();
   orders.forEach((o) => {
-    (o.cartItems || []).forEach((item) => {
+    if (isCancelled(o)) return;
+    (o.cartItems || []).forEach((item, line) => {
       const key = item.productId || item.title;
       if (!key) return;
       const row = byId.get(key) || { key, title: item.title, units: 0, revenue: 0 };
-      row.units += Number(item.quantity) || 0;
-      row.revenue += (Number(item.quantity) || 0) * (Number(item.price) || 0);
+      row.units += deliveredQty(o, line);
+      row.revenue += deliveredQty(o, line) * (Number(item.price) || 0);
       byId.set(key, row);
     });
   });
@@ -190,10 +210,11 @@ export function topProducts(orders = [], products = [], limit = 5) {
 export function categoryBreakdown(orders = [], products = [], categories = []) {
   const totals = new Map();
   orders.forEach((o) => {
-    (o.cartItems || []).forEach((item) => {
+    if (isCancelled(o)) return;
+    (o.cartItems || []).forEach((item, line) => {
       const product = products.find((p) => p.id === item.productId);
       const slug = product?.categorySlug || "uncategorised";
-      const value = (Number(item.quantity) || 0) * (Number(item.price) || 0);
+      const value = deliveredQty(o, line) * (Number(item.price) || 0);
       totals.set(slug, (totals.get(slug) || 0) + value);
     });
   });
@@ -236,7 +257,7 @@ export function customersFromOrders(orders = []) {
 
   orders.forEach((o) => {
     const email = o.user?.email?.toLowerCase();
-    if (!email) return;
+    if (!email || isCancelled(o)) return;
     const date = orderDate(o);
     const row = byEmail.get(email) || {
       email,
@@ -249,7 +270,7 @@ export function customersFromOrders(orders = []) {
       lastOrder: null,
     };
     row.orders += 1;
-    row.spend += orderTotal(o);
+    row.spend += orderNet(o);
     if (date && (!row.lastOrder || date > row.lastOrder)) {
       row.lastOrder = date;
       row.name = o.user?.name || row.name;
@@ -315,7 +336,7 @@ export function storeAlerts(orders = [], products = []) {
   });
 
   orders
-    .filter((o) => !isCompleted(o))
+    .filter((o) => isOpenOrder(o) && !openIssue(o))
     .forEach((o) => {
       alerts.push({
         id: `order-${o.id}`,
@@ -324,6 +345,34 @@ export function storeAlerts(orders = [], products = []) {
         body: `${o.user?.name || "A customer"} ordered ${orderUnits(o)} item(s).`,
         href: "/dashboard/orders",
         date: orderDate(o),
+        weight: 3,
+      });
+    });
+
+  allIssues(orders)
+    .filter((i) => i.status === "open")
+    .forEach((i) => {
+      alerts.push({
+        id: `issue-${i.id}`,
+        tone: "danger",
+        title: `Delivery problem at ${STEP_INFO[i.step]?.label}`,
+        body: `${i.order.user?.name || "A customer"}: ${ISSUE_TYPES[i.type]?.label}.`,
+        href: `/dashboard/orders/${i.order.id}`,
+        date: toDate(i.reportedAt),
+        weight: 4,
+      });
+    });
+
+  allReturns(orders)
+    .filter(isOpenReturn)
+    .forEach((r) => {
+      alerts.push({
+        id: `return-${r.id}`,
+        tone: "warning",
+        title: `Return ${RETURN_STATUS[r.status].label.toLowerCase()}`,
+        body: `${r.order.user?.name || "A customer"} is returning ${r.items.length} item(s).`,
+        href: "/dashboard/returns",
+        date: toDate(r.createdAt),
         weight: 3,
       });
     });

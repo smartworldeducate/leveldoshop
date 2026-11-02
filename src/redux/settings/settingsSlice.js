@@ -8,6 +8,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../lib/firebaseClient";
 import { DEFAULT_HOME, withHomeDefaults } from "../../data/home";
+import { DEFAULT_RETURN_SETTINGS } from "../../data/returns";
 
 export const SETTINGS_DOC = ["settings", "storefront"];
 
@@ -59,6 +60,8 @@ export const DEFAULT_SETTINGS = {
   },
   // Every word and picture on the home page — see src/data/home.js.
   home: DEFAULT_HOME,
+  // Whether shoppers can request returns online, and for how long after delivery.
+  returns: DEFAULT_RETURN_SETTINGS,
 };
 
 /** Merge a stored doc over the defaults so new keys always have a value. */
@@ -69,6 +72,7 @@ const withDefaults = (data = {}) => ({
   sections: { ...DEFAULT_SETTINGS.sections, ...(data.sections || {}) },
   contact: { ...DEFAULT_SETTINGS.contact, ...(data.contact || {}) },
   home: withHomeDefaults(data.home),
+  returns: { ...DEFAULT_SETTINGS.returns, ...(data.returns || {}) },
 });
 
 export const fetchSettings = createAsyncThunk(

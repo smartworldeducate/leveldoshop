@@ -24,13 +24,14 @@ import {
   RANGES,
   categoryBreakdown,
   formatDate,
-  isCompleted,
+  orderNet,
   orderTotal,
   ordersInRange,
   revenueSeries,
   storeKpis,
 } from "@/lib/analytics";
 import { LOW_STOCK_THRESHOLD, formatMoney, packLabel, stockState } from "@/data/grocery";
+import { orderStatusView } from "@/data/fulfilment";
 
 const RANGE_OPTIONS = [
   { value: "week", label: "7 days" },
@@ -53,7 +54,7 @@ export default function DashboardHome() {
     [orders, products, categories]
   );
 
-  const rangeRevenue = scoped.reduce((sum, o) => sum + orderTotal(o), 0);
+  const rangeRevenue = scoped.reduce((sum, o) => sum + orderNet(o), 0);
   const recent = [...orders].slice(0, 6);
   const needsRestock = products
     .filter((p) => (Number(p.stock) || 0) <= LOW_STOCK_THRESHOLD)
@@ -213,9 +214,7 @@ export default function DashboardHome() {
                   key: "status",
                   label: "Status",
                   render: (o) => (
-                    <Badge tone={isCompleted(o) ? "success" : "warning"}>
-                      {isCompleted(o) ? "Completed" : "Pending"}
-                    </Badge>
+                    <Badge tone={orderStatusView(o).tone}>{orderStatusView(o).label}</Badge>
                   ),
                 },
                 {

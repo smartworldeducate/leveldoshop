@@ -89,7 +89,7 @@ export default function Sidebar({
         </div>
 
         {/* sections */}
-        <nav className="mt-6 flex flex-1 flex-col gap-5 overflow-y-auto">
+        <nav className="mt-6 flex flex-1 flex-col gap-5 overflow-y-auto [scrollbar-color:rgba(255,255,255,0.3)_transparent] [scrollbar-width:thin]">
           {sections.map((section) => (
             <div key={section.title} className="flex flex-col gap-1.5">
               {!collapsed && (

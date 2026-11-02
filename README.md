@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Customer updates
+
+After each delivery step, the order page offers a **Send on WhatsApp** button with the message ready.
+Email is optional and sent automatically when these are set in `.env.local` (and on your host):
+
+```
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-login
+SMTP_PASS=your-password
+SMTP_FROM=orders@example.com
+NEXT_PUBLIC_SITE_URL=https://your-domain.example
+STORE_NAME=A-one Grocery
+```

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Bell,
   Boxes,
   FileText,
@@ -10,6 +11,7 @@ import {
   ShoppingBasket,
   ShieldCheck,
   Sprout,
+  Undo2,
   Users,
 } from "lucide-react";
 
@@ -24,6 +26,8 @@ export const NAV_SECTIONS = [
     items: [
       { id: "overview", label: "Overview", href: "/dashboard", icon: LayoutDashboard },
       { id: "orders", label: "Orders", href: "/dashboard/orders", icon: ShoppingBasket, badge: "pendingOrders" },
+      { id: "issues", label: "Delivery problems", href: "/dashboard/issues", icon: AlertTriangle, badge: "openIssues" },
+      { id: "returns", label: "Returns", href: "/dashboard/returns", icon: Undo2, badge: "openReturns" },
       { id: "customers", label: "Customers", href: "/dashboard/customers", icon: Users },
     ],
   },

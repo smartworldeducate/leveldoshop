@@ -4,6 +4,9 @@ import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import {
+  AlertTriangle,
+  ArrowRight,
+  Ban,
   CheckCircle2,
   ChevronDown,
   Clock,
@@ -12,9 +15,10 @@ import {
   Phone,
   ShoppingBasket,
   Trash2,
+  Undo2,
 } from "lucide-react";
 
-import DashboardLayout, { dashboardGetLayout } from "@/components/dashboard/DashboardLayout";
+import DashboardLayout, { DashboardLink, dashboardGetLayout } from "@/components/dashboard/DashboardLayout";
 import Card from "@/components/dashboard/ui/Card";
 import Button from "@/components/dashboard/ui/Button";
 import Badge from "@/components/dashboard/ui/Badge";
@@ -26,10 +30,12 @@ import Toolbar, { SearchInput } from "@/components/dashboard/ui/Toolbar";
 import SegmentedControl from "@/components/dashboard/ui/SegmentedControl";
 import { BRAND, FRESH } from "@/components/dashboard/theme";
 
-import { deleteOrder, toggleOrderStatus } from "@/redux/admin/ordersSlice";
+import { deleteOrder } from "@/redux/admin/ordersSlice";
 import { fetchProducts } from "@/redux/products/productsSlice";
-import { formatDateTime, isCompleted, orderTotal, orderUnits, timeAgo } from "@/lib/analytics";
+import { formatDateTime, isCompleted, orderNet, orderTotal, orderUnits, timeAgo } from "@/lib/analytics";
 import { formatMoney } from "@/data/grocery";
+import { canStartReturn, isOpenReturn, orderRefunded, returnsOf, RETURN_STATUS } from "@/data/returns";
+import { isCancelled, isOpenOrder, openIssue, orderStatusView, shortValue } from "@/data/fulfilment";
 
 export default function OrdersPage() {
   const dispatch = useDispatch();
@@ -48,32 +54,22 @@ export default function OrdersPage() {
     if (q) setExpanded(q);
   }, [router.query.q]);
 
-  const pending = orders.filter((o) => !isCompleted(o));
-  const revenue = orders.reduce((sum, o) => sum + orderTotal(o), 0);
+  const pending = orders.filter(isOpenOrder);
+  const revenue = orders.reduce((sum, o) => sum + orderNet(o), 0);
 
   const rows = useMemo(() => {
     const term = query.trim().toLowerCase();
     return orders.filter((o) => {
-      if (filter === "pending" && isCompleted(o)) return false;
+      if (filter === "pending" && !isOpenOrder(o)) return false;
       if (filter === "completed" && !isCompleted(o)) return false;
+      if (filter === "problems" && !openIssue(o)) return false;
+      if (filter === "cancelled" && !isCancelled(o)) return false;
       if (!term) return true;
       return [o.id, o.user?.name, o.user?.email, o.user?.phone, o.user?.city]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(term));
     });
   }, [orders, query, filter]);
-
-  const complete = async (order) => {
-    try {
-      await dispatch(toggleOrderStatus(order)).unwrap();
-      toast.success("Order completed — stock adjusted");
-      // The transaction decremented stock in Firestore; refresh the catalogue
-      // so inventory and the low-stock badges reflect it immediately.
-      dispatch(fetchProducts());
-    } catch (err) {
-      toast.error(typeof err === "string" ? err : "Could not complete the order");
-    }
-  };
 
   const confirmDelete = async () => {
     try {
@@ -100,6 +96,7 @@ export default function OrdersPage() {
         Address: o.user?.address || "",
         Items: orderUnits(o),
         Total: orderTotal(o),
+        Refunded: orderRefunded(o),
         Status: o.status || "pending",
         Placed: formatDateTime(o.createdAt),
         Products: (o.cartItems || [])
@@ -175,9 +172,15 @@ export default function OrdersPage() {
       sortable: true,
       sortValue: (o) => o.status || "pending",
       render: (o) => (
-        <Badge tone={isCompleted(o) ? "success" : "warning"} icon={isCompleted(o) ? CheckCircle2 : Clock}>
-          {isCompleted(o) ? "Completed" : "Pending"}
-        </Badge>
+        <div className="flex flex-col items-center gap-1">
+          <Badge
+            tone={orderStatusView(o).tone}
+            icon={openIssue(o) ? AlertTriangle : isCancelled(o) ? Ban : isCompleted(o) ? CheckCircle2 : Clock}
+          >
+            {orderStatusView(o).label}
+          </Badge>
+          {returnsOf(o).some(isOpenReturn) && <Badge tone="info" icon={Undo2}>Return open</Badge>}
+        </div>
       ),
     },
     {
@@ -186,16 +189,18 @@ export default function OrdersPage() {
       align: "right",
       render: (o) => (
         <div className="flex justify-end gap-2">
+          <Button size="sm" icon={ArrowRight} href={`/dashboard/orders/${o.id}`}>
+            Manage
+          </Button>
           <Button
-            variant="success"
+            variant="ghost"
             size="icon"
-            title="Mark completed and deduct stock"
-            aria-label="Complete order"
-            disabled={isCompleted(o)}
-            loading={processingId === o.id}
-            onClick={() => complete(o)}
+            title="Start a return"
+            aria-label="Start a return"
+            disabled={!canStartReturn(o)}
+            href={`/dashboard/returns/new?order=${o.id}`}
           >
-            <CheckCircle2 className="h-4 w-4" />
+            <Undo2 className="h-4 w-4" />
           </Button>
           <Button
             variant="softDanger"
@@ -255,6 +260,29 @@ export default function OrdersPage() {
           <span className="text-sm font-semibold text-slate-500">Order total</span>
           <span className="text-lg font-bold text-slate-800">{formatMoney(orderTotal(o))}</span>
         </div>
+        {shortValue(o) > 0 && (
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-sm text-slate-500">Not delivered</span>
+            <span className="text-sm font-semibold text-rose-600">−{formatMoney(shortValue(o))}</span>
+          </div>
+        )}
+        {orderRefunded(o) > 0 && (
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-sm text-slate-500">Refunded</span>
+            <span className="text-sm font-semibold text-rose-600">−{formatMoney(orderRefunded(o))}</span>
+          </div>
+        )}
+        {returnsOf(o).length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            Returns:
+            {returnsOf(o).map((r) => (
+              <Badge key={r.id} tone={RETURN_STATUS[r.status]?.tone}>
+                {RETURN_STATUS[r.status]?.label}
+              </Badge>
+            ))}
+            <DashboardLink href="/dashboard/returns">Manage</DashboardLink>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -283,7 +311,9 @@ export default function OrdersPage() {
             options={[
               { value: "all", label: "All", count: orders.length },
               { value: "pending", label: "Pending", count: pending.length },
-              { value: "completed", label: "Completed", count: orders.length - pending.length },
+              { value: "completed", label: "Completed", count: orders.filter(isCompleted).length },
+              { value: "problems", label: "Problems", count: orders.filter(openIssue).length },
+              { value: "cancelled", label: "Cancelled", count: orders.filter(isCancelled).length },
             ]}
           />
           <SearchInput value={query} onChange={setQuery} placeholder="Search name, email, city…"
@@ -339,6 +369,9 @@ export default function OrdersPage() {
               ? [
                   "This order was completed, so the stock it consumed is returned to the shelf.",
                   "Its revenue disappears from reports and the customer's history.",
+                  ...(returnsOf(deleteTarget).length
+                    ? ["Its return and refund records are deleted with it."]
+                    : []),
                 ]
               : [
                   "The order is still pending, so no stock changes hands.",

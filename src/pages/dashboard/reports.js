@@ -19,6 +19,7 @@ import {
   categoryBreakdown,
   formatDate,
   isCompleted,
+  orderNet,
   orderTotal,
   orderUnits,
   ordersInRange,
@@ -48,7 +49,7 @@ export default function ReportsPage() {
     [scoped, products, categories]
   );
 
-  const revenue = scoped.reduce((sum, o) => sum + orderTotal(o), 0);
+  const revenue = scoped.reduce((sum, o) => sum + orderNet(o), 0);
   const units = scoped.reduce((sum, o) => sum + orderUnits(o), 0);
   const completed = scoped.filter(isCompleted).length;
 
@@ -66,6 +67,7 @@ export default function ReportsPage() {
           City: o.user?.city || "",
           Items: orderUnits(o),
           Total: orderTotal(o),
+          "Not kept": orderTotal(o) - orderNet(o),
           Status: o.status || "pending",
         }))
       ),
