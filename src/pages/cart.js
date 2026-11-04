@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import Link from 'next/link'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import toast from 'react-hot-toast'
 import {
   Banknote,
@@ -12,9 +13,10 @@ import {
   MessageCircle,
   PackageCheck,
   ShoppingBasket,
+  TicketPercent,
   Truck,
 } from 'lucide-react'
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 
 import CartItem from '../components/CartItem'
 import { useAuth } from '../context/AuthContext'
@@ -23,6 +25,10 @@ import { formatMoney } from '../data/grocery'
 import { shortOrderId } from '../data/returns'
 import { whatsappNumber } from '../data/notifications'
 import { auth, db } from '../lib/firebaseClient'
+import { lookupCoupon, placeOrder } from '../lib/placeOrder'
+import { fetchSiteCoupons } from '../redux/coupons/couponsSlice'
+import { SAVED_COUPON_KEY } from '../lib/useApplyCoupon'
+import { computeDiscount, couponProblem, describeDiscount, normalizeCode } from '../data/coupons'
 
 // ✅ Disable SSR for Leaflet map
 const LocationPicker = dynamic(
@@ -82,8 +88,10 @@ function Confirmation({ orderId, signedIn, email }) {
 
 export default function Cart() {
   const dispatch = useDispatch()
+  const router = useRouter()
   const { user } = useAuth()
   const cartItems = useSelector((state) => state.cartItems.value)
+  const siteCoupons = useSelector((state) => state.coupons.site)
 
   const [products, setProducts] = useState(null)
   const [orderData, setOrderData] = useState({
@@ -98,17 +106,22 @@ export default function Cart() {
   const [loading, setLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [placed, setPlaced] = useState(null)
+  const [couponInput, setCouponInput] = useState('')
+  const [coupon, setCoupon] = useState(null)
+  const [couponError, setCouponError] = useState('')
+  const [checkingCoupon, setCheckingCoupon] = useState(false)
   const formRef = useRef(null)
 
   // Fetch full product info
   useEffect(() => {
+    dispatch(fetchSiteCoupons())
     getDocs(collection(db, 'products'))
       .then((snapshot) => setProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))))
       .catch((error) => {
         console.error('Error fetching products:', error)
         setProducts([])
       })
-  }, [])
+  }, [dispatch])
 
   // Save signed-in shoppers some typing, without overwriting what they've entered.
   useEffect(() => {
@@ -126,7 +139,70 @@ export default function Cart() {
   )
 
   const totalProducts = cartItems.reduce((total, item) => total + Number(item.quantity), 0)
-  const totalPrice = cartItems.reduce((total, item) => total + Number(item.quantity) * Number(item.price), 0)
+  const subtotal = cartItems.reduce((total, item) => total + Number(item.quantity) * Number(item.price), 0)
+
+  // Worked out again whenever the basket changes, so a code that stops qualifying
+  // says why instead of quietly taking money off. Checked once more when placing.
+  const pricedLines = cartProducts.map((item) => ({
+    categorySlug: item.product?.categorySlug,
+    price: Number(item.price),
+    quantity: Number(item.quantity),
+  }))
+  const couponIssue = coupon ? couponProblem(coupon, pricedLines) : null
+  const discount = coupon && !couponIssue ? computeDiscount(coupon, pricedLines).amount : 0
+  const totalPrice = Math.round((subtotal - discount) * 100) / 100
+
+  const applyCoupon = async (code) => {
+    const clean = normalizeCode(code)
+    if (!clean) return
+    setCheckingCoupon(true)
+    setCouponError('')
+    try {
+      const found = await lookupCoupon(clean)
+      const problem = couponProblem(found, pricedLines)
+      if (problem) {
+        setCouponError(problem)
+      } else {
+        setCoupon(found)
+        setCouponInput('')
+      }
+    } catch {
+      setCouponError('We could not check that code. Please try again.')
+    }
+    setCheckingCoupon(false)
+  }
+
+  // Arriving from an offer's copy button: apply its code once the basket is priced.
+  const linkedCoupon = typeof router.query.coupon === 'string' ? router.query.coupon : ''
+  useEffect(() => {
+    if (linkedCoupon && products && cartItems.length) {
+      setCouponInput(linkedCoupon)
+      applyCoupon(linkedCoupon)
+      router.replace('/cart', undefined, { shallow: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedCoupon, products])
+
+  // A code picked before there was anything in the basket.
+  useEffect(() => {
+    if (linkedCoupon || !products || !cartItems.length) return
+    try {
+      const saved = sessionStorage.getItem(SAVED_COUPON_KEY)
+      if (saved) {
+        sessionStorage.removeItem(SAVED_COUPON_KEY)
+        setCouponInput(saved)
+        applyCoupon(saved)
+      }
+    } catch {
+      // Private window: they can still paste the code.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedCoupon, products, cartItems.length])
+
+  const removeCoupon = () => {
+    setCoupon(null)
+    setCouponError('')
+  }
 
   /** Why a line can't be ordered as it stands, or undefined. */
   const lineProblem = ({ product, quantity }) => {
@@ -196,26 +272,25 @@ export default function Cart() {
 
     setLoading(true)
     try {
-      const ref = await addDoc(collection(db, 'order'), {
+      const order = await placeOrder({
         user: orderData,
         userId: auth.currentUser?.uid || null, // lets My orders find it whatever email was typed
-        location: orderData.location, // ✅ saved
-        cartItems: cartProducts.map((item) => ({
-          productId: item.product.id,
-          title: item.product.title,
-          images: item.product.images || [],
-          price: Number(item.price),
-          quantity: Number(item.quantity),
-        })),
-        totalPrice,
-        createdAt: serverTimestamp(),
+        lines: cartProducts,
+        couponCode: coupon && !couponIssue ? coupon.code : null,
       })
-      setPlaced({ id: ref.id, email: orderData.email })
+      setPlaced({ id: order.id, email: orderData.email })
       dispatch(clearCart())
       window.scrollTo({ top: 0 })
     } catch (error) {
-      console.error('Order error:', error)
-      toast.error('We could not place your order. Please try again.')
+      if (error.coupon) {
+        // The code stopped qualifying, so nothing was saved: show the real total.
+        removeCoupon()
+        setCouponError(error.message)
+        toast.error(`${error.message} Check your new total, then place your order.`)
+      } else {
+        console.error('Order error:', error)
+        toast.error('We could not place your order. Please try again.')
+      }
     }
     setLoading(false)
   }
@@ -332,6 +407,68 @@ export default function Cart() {
                   </li>
                 ))}
               </ul>
+
+              {discount > 0 && (
+                <div className="checkout-summary__discount">
+                  <span>Coupon {coupon.code}</span>
+                  <span>−{formatMoney(discount)}</span>
+                </div>
+              )}
+
+              <div className="checkout-coupon">
+                {coupon ? (
+                  <div className={`checkout-coupon__applied${couponIssue ? ' is-warning' : ''}`}>
+                    <TicketPercent size={18} />
+                    <span>
+                      {coupon.code}
+                      <small>{couponIssue || describeDiscount(coupon)}</small>
+                    </span>
+                    <button type="button" onClick={removeCoupon}>Remove</button>
+                  </div>
+                ) : (
+                  <>
+                    <label htmlFor="checkout-coupon">Coupon code</label>
+                    <div className="checkout-coupon__row">
+                      <input
+                        id="checkout-coupon"
+                        value={couponInput}
+                        autoComplete="off"
+                        placeholder="Enter your code"
+                        aria-describedby="checkout-coupon-note"
+                        onChange={(e) => {
+                          setCouponInput(e.target.value)
+                          setCouponError('')
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            applyCoupon(couponInput)
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={checkingCoupon || !couponInput.trim() || !products}
+                        onClick={() => applyCoupon(couponInput)}
+                      >
+                        {checkingCoupon ? 'Checking…' : 'Apply'}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <small id="checkout-coupon-note" className="checkout-pin is-error" role="alert">{couponError}</small>
+                    )}
+                    {siteCoupons.length > 0 && (
+                      <div className="checkout-coupon__offers">
+                        {siteCoupons.map((c) => (
+                          <button key={c.code} type="button" onClick={() => applyCoupon(c.code)}>
+                            {c.code}: {describeDiscount(c)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
 
               <div className="checkout-summary__total">
                 <span>Total</span>

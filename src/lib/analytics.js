@@ -21,6 +21,7 @@ import {
   isOpenOrder,
   openIssue,
   shortValue,
+  unitPaid,
 } from "@/data/fulfilment";
 
 /** Firestore Timestamp | Date | string | number → Date (or null). */
@@ -187,7 +188,7 @@ export function topProducts(orders = [], products = [], limit = 5) {
       if (!key) return;
       const row = byId.get(key) || { key, title: item.title, units: 0, revenue: 0 };
       row.units += deliveredQty(o, line);
-      row.revenue += deliveredQty(o, line) * (Number(item.price) || 0);
+      row.revenue += deliveredQty(o, line) * unitPaid(item);
       byId.set(key, row);
     });
   });
@@ -214,7 +215,7 @@ export function categoryBreakdown(orders = [], products = [], categories = []) {
     (o.cartItems || []).forEach((item, line) => {
       const product = products.find((p) => p.id === item.productId);
       const slug = product?.categorySlug || "uncategorised";
-      const value = deliveredQty(o, line) * (Number(item.price) || 0);
+      const value = deliveredQty(o, line) * unitPaid(item);
       totals.set(slug, (totals.get(slug) || 0) + value);
     });
   });

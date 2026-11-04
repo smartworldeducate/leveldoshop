@@ -95,6 +95,8 @@ export default function OrdersPage() {
         City: o.user?.city || "",
         Address: o.user?.address || "",
         Items: orderUnits(o),
+        Coupon: o.coupon?.code || "",
+        Discount: Number(o.discount) || 0,
         Total: orderTotal(o),
         Refunded: orderRefunded(o),
         Status: o.status || "pending",
@@ -260,6 +262,12 @@ export default function OrdersPage() {
           <span className="text-sm font-semibold text-slate-500">Order total</span>
           <span className="text-lg font-bold text-slate-800">{formatMoney(orderTotal(o))}</span>
         </div>
+        {o.discount > 0 && (
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-sm text-slate-500">Includes coupon {o.coupon?.code}</span>
+            <span className="text-sm font-semibold text-emerald-600">−{formatMoney(o.discount)}</span>
+          </div>
+        )}
         {shortValue(o) > 0 && (
           <div className="mt-1 flex items-center justify-between">
             <span className="text-sm text-slate-500">Not delivered</span>

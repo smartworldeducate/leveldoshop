@@ -11,6 +11,7 @@ import SectionHead from '../components/SectionHead'
 import ProductRail from '../components/ProductRail'
 import Grid from '../components/Grid'
 import ProductCard from '../components/ProductCard'
+import CouponStrip from '../components/CouponStrip'
 
 import { discountPercent, expiryState, isSellable, visibleCategories } from '../data/grocery'
 import { DEFAULT_HOME, copyOf, fillText, headingOf, orDefault, withHomeDefaults } from '../data/home'
@@ -20,6 +21,9 @@ import { excerptOf, formatPostDate, readingTime } from '../utils/post'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProducts } from '../redux/products/productsSlice'
 import { fetchPosts } from '../redux/posts/postsSlice'
+import { fetchSiteCoupons } from '../redux/coupons/couponsSlice'
+import { fetchOffers } from '../redux/couponSales/couponSalesSlice'
+import { offersOnSale } from '../data/couponSales'
 
 export default function Home() {
   const dispatch = useDispatch()
@@ -27,6 +31,9 @@ export default function Home() {
   const products = useSelector(state => state.products.items)
   const categories = useSelector(state => state.categories.items)
   const posts = useSelector(state => state.posts.items)
+  const siteCoupons = useSelector(state => state.coupons.site)
+  const offers = useSelector(state => state.couponSales.offers)
+  const couponShop = useSelector(state => state.settings.values.couponShop)
   const { storeName, sections, pages, home } = useSelector(state => state.settings.values)
 
   // Every heading, banner and button label on this page is written in the
@@ -41,6 +48,8 @@ export default function Home() {
 
   useEffect(() => {
     dispatch(fetchProducts())
+    dispatch(fetchSiteCoupons())
+    dispatch(fetchOffers())
   }, [dispatch])
 
   // Only pay for the posts read when the teaser is actually going to render.
@@ -91,6 +100,21 @@ export default function Home() {
       on('promise') && (
         <section className={`home-block ${position === 0 ? 'home-block--overlap' : ''}`}>
           <PromiseStrip />
+        </section>
+      ),
+
+    coupons: () =>
+      on('coupons') &&
+      (siteCoupons.length > 0 || offersOnSale(offers, couponShop).length > 0) && (
+        <section className="home-block">
+          <SectionHead
+            kicker={head('coupons').kicker}
+            title={head('coupons').title}
+            note={head('coupons').note}
+            href={head('coupons').linkHref || undefined}
+            linkLabel={head('coupons').linkLabel}
+          />
+          <CouponStrip />
         </section>
       ),
 
@@ -174,7 +198,7 @@ export default function Home() {
             </div>
           )}
 
-          <Grid col={6} mdCol={3} smCol={2} gap={20}>
+          <Grid col={6} mdCol={3} smCol={2} gap={20} className="home-shelf">
             {freshIn.map(item => (
               <ProductCard key={item.id} product={item} />
             ))}
@@ -291,7 +315,7 @@ export default function Home() {
             href={head('everything').linkHref || undefined}
             linkLabel={head('everything').linkLabel}
           />
-          <Grid col={6} mdCol={3} smCol={2} gap={20}>
+          <Grid col={6} mdCol={3} smCol={2} gap={20} className="home-shelf">
             {everything.slice(12, 24).map(item => (
               <ProductCard key={item.id} product={item} />
             ))}

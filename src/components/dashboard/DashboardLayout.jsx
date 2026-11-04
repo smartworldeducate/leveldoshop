@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -13,6 +13,7 @@ import { auth } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { fetchProducts } from "@/redux/products/productsSlice";
 import { fetchOrders } from "@/redux/admin/ordersSlice";
+import { fetchPurchases } from "@/redux/couponSales/couponSalesSlice";
 import { storeAlerts } from "@/lib/analytics";
 import { LOW_STOCK_THRESHOLD } from "@/data/grocery";
 import { allReturns, isOpenReturn } from "@/data/returns";
@@ -28,26 +29,29 @@ function FullScreen({ children }) {
   );
 }
 
+const ShellContext = createContext({});
+
 /**
  * The back-office shell: auth gate, data bootstrap and chrome.
  *
- * Every /dashboard page renders inside this, so the guard and the catalogue /
- * order fetches live in exactly one place. Pages just read from the store.
- *
- * @param {string}    title    Header title
- * @param {string}    eyebrow  Small text above the title
- * @param {ReactNode} actions  Buttons rendered in the header
+ * It wraps every /dashboard page from `getLayout`, so it stays mounted while
+ * moving between them: only the page inside changes, and the sidebar keeps its
+ * scroll position. The guard and the catalogue / order fetches live in exactly
+ * one place. Pages just read from the store.
  */
-export default function DashboardLayout({ title = "Overview", eyebrow = "Store", actions, children }) {
+export function DashboardShell({ children }) {
   const router = useRouter();
   const dispatch = useDispatch();
   const { user, loading, hasDashboardAccess } = useAuth();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mainRef = useRef(null);
+  const path = router.asPath.split("?")[0];
 
   const products = useSelector((s) => s.products.items);
   const orders = useSelector((s) => s.adminOrders.items);
+  const purchases = useSelector((s) => s.couponSales.purchases);
 
   const allowed = hasDashboardAccess;
 
@@ -63,12 +67,19 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
     }
   }, [user, loading, router]);
 
-  // One bootstrap for the whole back-office; pages refetch only after writes.
+  // One bootstrap for the whole back-office, repeated on each page so new
+  // orders and payments show up. It happens quietly behind what's on screen.
   useEffect(() => {
     if (!allowed) return;
     dispatch(fetchProducts());
     dispatch(fetchOrders());
-  }, [allowed, dispatch]);
+    dispatch(fetchPurchases());
+  }, [allowed, dispatch, router.pathname]);
+
+  // The content pane outlives each page, so a new page has to start at the top.
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [path]);
 
   const counts = useMemo(() => {
     const pendingOrders = orders.filter(isOpenOrder).length;
@@ -81,8 +92,9 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
       alerts: storeAlerts(orders, products).length,
       openReturns: allReturns(orders).filter(isOpenReturn).length,
       openIssues: allIssues(orders).filter((i) => i.status === "open").length,
+      couponsToCheck: purchases.filter((p) => p.status === "pending").length,
     };
-  }, [orders, products]);
+  }, [orders, products, purchases]);
 
   const toggleCollapse = () => {
     setCollapsed((prev) => {
@@ -140,11 +152,7 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
   }
 
   return (
-    <>
-      <Head>
-        <title>{`${title} · A-one Grocery`}</title>
-      </Head>
-
+    <ShellContext.Provider value={{ user, openMenu: () => setMobileOpen(true) }}>
       <div className="dashboard-shell flex h-screen w-full gap-4 bg-[#DAD8EA] p-4 font-sans">
         <Sidebar
           user={user}
@@ -157,24 +165,38 @@ export default function DashboardLayout({ title = "Overview", eyebrow = "Store",
         />
 
         <div className="flex min-w-0 flex-1 overflow-hidden rounded-[32px] bg-[#F4F3FA] shadow-[0_40px_90px_-45px_rgba(80,70,150,0.55)]">
-          <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6">
-            <Header
-              title={title}
-              eyebrow={eyebrow}
-              actions={actions}
-              user={user}
-              onOpenMenu={() => setMobileOpen(true)}
-            />
+          <main ref={mainRef} className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6">
             {children}
           </main>
         </div>
       </div>
+    </ShellContext.Provider>
+  );
+}
+
+/**
+ * One page's part of the shell: its browser title and header.
+ *
+ * @param {string}    title    Header title
+ * @param {string}    eyebrow  Small text above the title
+ * @param {ReactNode} actions  Buttons rendered in the header
+ */
+export default function DashboardLayout({ title = "Overview", eyebrow = "Store", actions, children }) {
+  const { user, openMenu } = useContext(ShellContext);
+
+  return (
+    <>
+      <Head>
+        <title>{`${title} · A-one Grocery`}</title>
+      </Head>
+      <Header title={title} eyebrow={eyebrow} actions={actions} user={user} onOpenMenu={openMenu} />
+      {children}
     </>
   );
 }
 
-/** Dashboard pages opt out of the storefront chrome (header/footer/WhatsApp). */
-export const dashboardGetLayout = (page) => page;
+/** Dashboard pages swap the storefront chrome (header/footer/WhatsApp) for the shell. */
+export const dashboardGetLayout = (page) => <DashboardShell>{page}</DashboardShell>;
 
 /** Convenience link used by empty states that point at another section. */
 export const DashboardLink = ({ href, children }) => (

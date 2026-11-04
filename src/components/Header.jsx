@@ -7,6 +7,7 @@ import { signOut } from 'firebase/auth'
 import { useAuth } from '../context/AuthContext'
 import { auth } from '../lib/firebaseClient'
 import { visibleCategories } from '../data/grocery'
+import { couponShopIsOpen, offersOnSale } from '../data/couponSales'
 
 // `page` maps a link to its settings key; links without one are always shown.
 const mainNav = [
@@ -26,7 +27,17 @@ export default function Header() {
 
   const aisles = visibleCategories(categories)
   // A page switched off in the dashboard loses its link here too.
-  const nav = mainNav.filter((item) => !item.page || pages?.[item.page] !== false)
+  const couponShop = useSelector((state) => state.settings.values.couponShop)
+  const draws = useSelector((state) => state.rewards.draws)
+  const offers = useSelector((state) => state.couponSales.offers)
+  const shopOpen = couponShopIsOpen(couponShop)
+  const nav = [
+    ...mainNav.filter((item) => !item.page || pages?.[item.page] !== false),
+    ...(shopOpen ? [{ display: 'Coupons', path: '/coupons' }] : []),
+    ...(draws.some((d) => d.visible !== false) || offersOnSale(offers, couponShop).some((o) => o.rewardText)
+      ? [{ display: 'Rewards', path: '/rewards' }]
+      : []),
+  ]
 
   const [term, setTerm] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -150,6 +161,7 @@ export default function Header() {
                     <div className="account-menu">
                       {hasDashboardAccess && <Link href="/dashboard">Dashboard</Link>}
                       <Link href="/orders">My orders</Link>
+                      {shopOpen && <Link href="/coupons/mine">My coupons</Link>}
                       <Link href="/posts">Blog</Link>
                       <button type="button" onClick={handleLogout}>Log out</button>
                     </div>

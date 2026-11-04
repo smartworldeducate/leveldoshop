@@ -118,11 +118,18 @@ export function deliveredQty(order, line) {
   return Math.max(0, bought - (shortByLine(order)[line] || 0));
 }
 
+/** What one unit of a basket line really cost, after any coupon. */
+export function unitPaid(item) {
+  const price = Number(item?.price) || 0;
+  const quantity = Number(item?.quantity) || 0;
+  return quantity > 0 ? price - (Number(item?.discount) || 0) / quantity : price;
+}
+
 /** Money the customer no longer pays for undelivered items. */
 export function shortValue(order) {
   const short = shortByLine(order);
   return (order?.cartItems || []).reduce(
-    (sum, item, line) => sum + (short[line] || 0) * (Number(item.price) || 0),
+    (sum, item, line) => sum + (short[line] || 0) * unitPaid(item),
     0
   );
 }
@@ -191,7 +198,7 @@ export function reportIssue(order, { type, note = "", selection = {} }, { id, at
             productId: item.productId || null,
             title: item.title || "",
             image: item.images?.[0] || null,
-            price: Number(item.price) || 0,
+            price: unitPaid(item),
             quantity,
           };
         });

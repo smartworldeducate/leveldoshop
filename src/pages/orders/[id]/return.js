@@ -19,6 +19,7 @@ import {
   returnableQty,
   shortOrderId,
 } from '../../../data/returns'
+import { unitPaid } from '../../../data/fulfilment'
 
 const BLOCK_MESSAGES = {
   expired: 'The return window for this order has closed.',
@@ -62,7 +63,7 @@ export default function RequestReturn() {
     .filter((row) => row.max > 0)
   const chosen = lines.filter(({ line }) => selection[line] > 0)
   const units = chosen.reduce((sum, { line }) => sum + selection[line], 0)
-  const value = chosen.reduce((sum, { item, line }) => sum + selection[line] * (Number(item.price) || 0), 0)
+  const value = chosen.reduce((sum, { item, line }) => sum + selection[line] * unitPaid(item), 0)
   const change = (line, max, next) =>
     setSelection((s) => ({ ...s, [line]: Math.min(max, Math.max(0, next)) }))
 
@@ -123,7 +124,7 @@ export default function RequestReturn() {
                       <ItemThumb src={item.images?.[0]} />
                       <div>
                         <p>{item.title}</p>
-                        <span>{formatMoney(item.price)} each · {max} can be returned</span>
+                        <span>{formatMoney(unitPaid(item))} each · {max} can be returned</span>
                       </div>
                       <div className="qty-stepper" role="group" aria-label={`Units of ${item.title} to return`}>
                         <button type="button" aria-label="One less" disabled={!selection[line]} onClick={() => change(line, max, (selection[line] || 0) - 1)}>
@@ -170,7 +171,7 @@ export default function RequestReturn() {
                     {chosen.map(({ item, line }) => (
                       <li key={line}>
                         <span>{selection[line]} × {item.title}</span>
-                        <strong>{formatMoney(selection[line] * (Number(item.price) || 0))}</strong>
+                        <strong>{formatMoney(selection[line] * unitPaid(item))}</strong>
                       </li>
                     ))}
                   </ul>

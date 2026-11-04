@@ -49,6 +49,7 @@ export const HOME_ICONS = [
  */
 export const HOME_ORDER = [
   "promise",
+  "coupons",
   "aisles",
   "offers",
   "deals",
@@ -159,6 +160,7 @@ export const DEFAULT_HOME = {
   // Heading copy per home section. Keys match HOME_SECTIONS in the settings
   // slice, so switching a section off and renaming it live side by side.
   headings: {
+    coupons: { kicker: "Save more", title: "Offers for you", note: "Copy a code to get started", linkLabel: "All coupons", linkHref: "/coupons" },
     aisles: { kicker: "Shop by aisle", title: "Explore our collections", note: "", linkLabel: "View all aisles", linkHref: "/catalog" },
     deals: { kicker: "Reduced this week", title: "Deals this week", note: "Marked down and use-it-soon", linkLabel: "See all", linkHref: "/deals" },
     fresh: { kicker: "Just landed", title: "Fresh in today", note: "Newest on the shelf", linkLabel: "See all", linkHref: "/catalog" },

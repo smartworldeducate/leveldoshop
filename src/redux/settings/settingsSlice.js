@@ -9,6 +9,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../lib/firebaseClient";
 import { DEFAULT_HOME, withHomeDefaults } from "../../data/home";
 import { DEFAULT_RETURN_SETTINGS } from "../../data/returns";
+import { DEFAULT_COUPON_SHOP } from "../../data/couponSales";
 
 export const SETTINGS_DOC = ["settings", "storefront"];
 
@@ -23,6 +24,7 @@ export const TOGGLEABLE_PAGES = [
 /** Home-page blocks, in their default order (reordered at /dashboard/home). */
 export const HOME_SECTIONS = [
   { key: "promise", label: "Promise strip", note: "Delivery · freshness · payment · rewards" },
+  { key: "coupons", label: "Offers", note: "Coupons marked to show on the website" },
   { key: "aisles", label: "Explore our collections", note: "Aisle cards with an entry price" },
   { key: "offers", label: "Offer mosaic", note: "Four tiles built from live deals and arrivals" },
   { key: "deals", label: "Deals rail", note: "Only appears when something is reduced" },
@@ -62,6 +64,8 @@ export const DEFAULT_SETTINGS = {
   home: DEFAULT_HOME,
   // Whether shoppers can request returns online, and for how long after delivery.
   returns: DEFAULT_RETURN_SETTINGS,
+  // Selling coupons: closed until the shopkeeper adds their payment details.
+  couponShop: DEFAULT_COUPON_SHOP,
 };
 
 /** Merge a stored doc over the defaults so new keys always have a value. */
@@ -73,6 +77,7 @@ const withDefaults = (data = {}) => ({
   contact: { ...DEFAULT_SETTINGS.contact, ...(data.contact || {}) },
   home: withHomeDefaults(data.home),
   returns: { ...DEFAULT_SETTINGS.returns, ...(data.returns || {}) },
+  couponShop: { ...DEFAULT_SETTINGS.couponShop, ...(data.couponShop || {}) },
 });
 
 export const fetchSettings = createAsyncThunk(

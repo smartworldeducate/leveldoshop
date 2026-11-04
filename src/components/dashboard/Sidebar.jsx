@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { ChevronLeft, LogOut, Store, X } from "lucide-react";
@@ -13,6 +14,7 @@ function NavLink({ item, active, collapsed, count, onNavigate }) {
       href={href}
       onClick={onNavigate}
       aria-label={label}
+      aria-current={active ? "page" : undefined}
       title={collapsed ? label : undefined}
       className={`group relative flex h-11 items-center rounded-2xl transition ${FOCUS} ${
         collapsed ? "w-11 justify-center" : "gap-3 px-3"
@@ -47,11 +49,17 @@ export default function Sidebar({
   counts = {},
 }) {
   const { pathname } = useRouter();
+  const navRef = useRef(null);
   const owner = isAdmin(user);
   const sections = NAV_SECTIONS.map((s) => ({
     ...s,
     items: s.items.filter((item) => !item.ownerOnly || owner),
   })).filter((s) => s.items.length);
+
+  // Opening a page directly, or from search: bring its link into view if it's off-screen.
+  useEffect(() => {
+    navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest" });
+  }, [pathname]);
 
   return (
     <>
@@ -89,7 +97,7 @@ export default function Sidebar({
         </div>
 
         {/* sections */}
-        <nav className="mt-6 flex flex-1 flex-col gap-5 overflow-y-auto [scrollbar-color:rgba(255,255,255,0.3)_transparent] [scrollbar-width:thin]">
+        <nav ref={navRef} className="mt-6 flex flex-1 flex-col gap-5 overflow-y-auto [scrollbar-color:rgba(255,255,255,0.3)_transparent] [scrollbar-width:thin]">
           {sections.map((section) => (
             <div key={section.title} className="flex flex-col gap-1.5">
               {!collapsed && (

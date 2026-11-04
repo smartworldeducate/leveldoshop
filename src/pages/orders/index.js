@@ -199,6 +199,7 @@ function OrderCard({ order, settings }) {
         <div className="my-order__total">
           <span>{plural(orderUnits(order), 'item')} · Total</span>
           <strong>{formatMoney(orderTotal(order))}</strong>
+          {order.discount > 0 && <em>{formatMoney(order.discount)} saved with {order.coupon?.code}</em>}
           {shortValue(order) > 0 && <em>{formatMoney(shortValue(order))} not charged</em>}
           {refunded > 0 && <em>{formatMoney(refunded)} refunded</em>}
         </div>

@@ -736,9 +736,19 @@
         gap: 14px;
     }
 
+    // One swipeable row: ten aisles stacked took more than a phone screen and a half.
     @include mobile {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 42%;
         gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scroll-snap-type: x proximity;
+
+        > * {
+            scroll-snap-align: start;
+        }
     }
 }
 
@@ -793,7 +803,7 @@
     &__media {
         display: block;
         position: relative;
-        aspect-ratio: 3 / 4;
+        aspect-ratio: 4 / 3;
         overflow: hidden;
         // Falls back to the aisle's own colour when there is no photograph.
         background:
@@ -807,13 +817,6 @@
             transition: transform 0.45s ease;
         }
 
-        @include tablet {
-            aspect-ratio: 4 / 5;
-        }
-
-        @include mobile {
-            aspect-ratio: 1 / 1;
-        }
     }
 
     // Stand-in while the aisle has no photograph: its own icon, not a letter.
@@ -1252,7 +1255,8 @@
 .p-rail {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(200px, 1fr);
+    // A fixed width: with one deal on the shelf, 1fr drew a card the size of the page.
+    grid-auto-columns: 220px;
     gap: 18px;
     overflow-x: auto;
     padding-bottom: 8px;
@@ -1260,7 +1264,7 @@
     scrollbar-width: thin;
 
     @include mobile {
-        grid-auto-columns: minmax(155px, 1fr);
+        grid-auto-columns: 160px;
         gap: 12px;
     }
 
@@ -1294,8 +1298,7 @@
     }
 
     @include mobile {
-        grid-template-columns: 1fr;
-        padding: 10px 6px;
+        padding: 6px;
     }
 
     &__item {
@@ -1322,12 +1325,12 @@
             }
         }
 
+        // Two by two, icon above its words, so four promises don't fill a phone screen.
         @include mobile {
-            border-left: 0;
-
-            &:nth-child(n + 2) {
-                border-top: 1px solid rgba($main-color, 0.12);
-            }
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px;
         }
 
         &:hover i {
@@ -1644,6 +1647,15 @@
         small {
             color: rgba(#fff, 0.75);
             font-size: 0.78rem;
+        }
+    }
+}
+
+// Phones show six products on a shelf; the link in the section head has the rest.
+.home-shelf {
+    @include mobile {
+        > *:nth-child(n + 7) {
+            display: none;
         }
     }
 }

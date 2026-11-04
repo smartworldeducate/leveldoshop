@@ -590,6 +590,18 @@ export default function OrderWorkspacePage() {
               ))}
             </div>
             <div className="mt-4 flex flex-col gap-1 border-t border-slate-100 pt-4 text-sm">
+              {order.discount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Items</span>
+                  <span className="font-semibold text-slate-800">{formatMoney(order.subtotal)}</span>
+                </div>
+              )}
+              {order.discount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Coupon {order.coupon.code}</span>
+                  <span className="font-semibold text-emerald-600">−{formatMoney(order.discount)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Order total</span>
                 <span className="font-semibold text-slate-800">{formatMoney(orderTotal(order))}</span>

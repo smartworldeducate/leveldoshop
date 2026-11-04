@@ -7,6 +7,9 @@ import settingsReducer from './settings/settingsSlice'
 import ordersReducer from './admin/ordersSlice'
 import contactReducer from './contact/contactSlice'
 import postReducer from './posts/postsSlice'
+import couponsReducer from './coupons/couponsSlice'
+import couponSalesReducer from './couponSales/couponSalesSlice'
+import rewardsReducer from './rewards/rewardsSlice'
 
 // `products` is the one catalogue slice: the storefront reads it, the
 // dashboard reads and writes it.
@@ -20,6 +23,9 @@ const store = configureStore({
         adminOrders: ordersReducer,
         contact: contactReducer,
         posts: postReducer,
+        coupons: couponsReducer,
+        couponSales: couponSalesReducer,
+        rewards: rewardsReducer,
     },
 })
 

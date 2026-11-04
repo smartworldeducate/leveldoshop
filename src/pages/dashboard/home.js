@@ -33,6 +33,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 
 /** Sections whose heading copy is editable, labelled as on the storefront. */
 const HEADING_KEYS = [
+  { key: "coupons", label: "Offers" },
   { key: "aisles", label: "Explore our collections" },
   { key: "deals", label: "Deals rail" },
   { key: "fresh", label: "Fresh in today" },

@@ -3,14 +3,17 @@ import {
   Bell,
   Boxes,
   FileText,
+  Gift,
   Home,
   LayoutDashboard,
   LayoutGrid,
   PieChart,
   Settings,
+  ShoppingBag,
   ShoppingBasket,
   ShieldCheck,
   Sprout,
+  TicketPercent,
   Undo2,
   Users,
 } from "lucide-react";
@@ -50,6 +53,9 @@ export const NAV_SECTIONS = [
   {
     title: "Storefront",
     items: [
+      { id: "coupons", label: "Discount codes", href: "/dashboard/coupons", icon: TicketPercent },
+      { id: "couponSales", label: "Sell coupons", href: "/dashboard/coupon-sales", icon: ShoppingBag, badge: "couponsToCheck" },
+      { id: "rewards", label: "Reward draw", href: "/dashboard/rewards", icon: Gift },
       { id: "home", label: "Home page", href: "/dashboard/home", icon: Home },
       { id: "pages", label: "Pages & sections", href: "/dashboard/settings", icon: Settings },
     ],

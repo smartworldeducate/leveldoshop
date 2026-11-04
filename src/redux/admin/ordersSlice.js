@@ -81,6 +81,39 @@ const readBasket = async (
   );
 };
 
+/**
+ * A cancelled or deleted order gives its coupon use back. Read before any
+ * writes, as Firestore requires, then apply with writeCouponRelease.
+ */
+const readCouponRelease = async (transaction, order) => {
+  const code = order.coupon?.code;
+  if (!code) return null;
+
+  const ref = doc(db, "coupons", code);
+  const snap = await transaction.get(ref);
+  const usage = await Promise.all(
+    (order.coupon.redemptionKeys || []).map(async (key) => {
+      const usageRef = doc(db, "coupons", code, "redemptions", key);
+      return { ref: usageRef, snap: await transaction.get(usageRef) };
+    })
+  );
+  return { ref, snap, usage };
+};
+
+const writeCouponRelease = (transaction, release) => {
+  if (!release) return;
+  // The coupon may have been deleted since; then there is nothing to give back.
+  if (release.snap.exists()) {
+    transaction.update(release.ref, { usedCount: Math.max(0, (release.snap.data().usedCount || 0) - 1) });
+  }
+  release.usage.forEach(({ ref, snap }) => {
+    if (!snap.exists()) return;
+    const count = (snap.data().count || 0) - 1;
+    if (count > 0) transaction.update(ref, { count });
+    else transaction.delete(ref);
+  });
+};
+
 /* ============================
    FULFILMENT
 ============================ */
@@ -161,8 +194,9 @@ export const resolveOrderIssue = createAsyncThunk(
         const snap = await transaction.get(orderRef);
         if (!snap.exists()) throw new Error("Order not found");
 
+        const order = snap.data();
         const result = resolveIssue(
-          snap.data(),
+          order,
           issueId,
           { resolution, note },
           { at: new Date().toISOString(), by: actor() }
@@ -174,11 +208,14 @@ export const resolveOrderIssue = createAsyncThunk(
             return { id, ref, snap: await transaction.get(ref) };
           })
         );
+        const release = resolution === "cancel" ? await readCouponRelease(transaction, order) : null;
+
         products.forEach(({ id, ref, snap: productSnap }) => {
           if (!productSnap.exists()) return;
           const stock = productSnap.data().stock ?? 0;
           transaction.update(ref, { stock: Math.max(0, stock - result.writeOff[id]) });
         });
+        writeCouponRelease(transaction, release);
 
         transaction.update(orderRef, result.patch);
         return result.patch;
@@ -209,6 +246,8 @@ export const deleteOrder = createAsyncThunk(
       const restocked = restockedByLine(order);
 
       await runTransaction(db, async (transaction) => {
+        const release = order.status === "cancelled" ? null : await readCouponRelease(transaction, order);
+
         // 1️⃣ RESTORE STOCK (ONLY IF COMPLETED)
         if (order.status === "completed") {
           const lines = await readBasket(
@@ -226,7 +265,8 @@ export const deleteOrder = createAsyncThunk(
           }
         }
 
-        // 2️⃣ DELETE ORDER
+        // 2️⃣ DELETE ORDER (a cancelled order already gave its coupon back)
+        writeCouponRelease(transaction, release);
         transaction.delete(orderRef);
       });
 
@@ -400,8 +440,9 @@ const ordersSlice = createSlice({
     builder
 
       // FETCH
+      // Refreshing what's already on screen shouldn't bring the spinner back.
       .addCase(fetchOrders.pending, (state) => {
-        state.status = "loading";
+        if (!state.items.length) state.status = "loading";
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.status = "succeeded";

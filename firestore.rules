@@ -1,0 +1,225 @@
+rules_version = '2';
+
+// Security rules for the A-one Grocery website and mobile app.
+// Tested by firestore-tests/rules.test.mjs. Anything not matched here is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function email() {
+      return request.auth.token.email.lower();
+    }
+
+    // Keep in step with NEXT_PUBLIC_ADMIN_EMAILS / the fallback in src/lib/admins.js.
+    function isOwner() {
+      return signedIn() && email() in ['salmanalisoftwareenginear@gmail.com'];
+    }
+
+    function isStaff() {
+      return isOwner()
+        || (signedIn() && exists(/databases/$(database)/documents/dashboardUsers/$(email())));
+    }
+
+    // By account, or by checkout email. The email must be verified, because
+    // anyone can register a password account using someone else's address.
+    function ownsOrder() {
+      return signedIn() && (
+        resource.data.userId == request.auth.uid
+        || (request.auth.token.email_verified == true
+            && resource.data.user.email == request.auth.token.email)
+      );
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function couponIsLive(coupon) {
+      return coupon.enabled == true
+        && (coupon.startsAt == '' || request.time >= timestamp.value(coupon.startsAt))
+        && (coupon.endsAt == '' || request.time <= timestamp.value(coupon.endsAt))
+        && (coupon.usageLimit == 0 || coupon.usedCount < coupon.usageLimit);
+    }
+
+    // An order using a coupon must point at a live one, and count the use in
+    // the same write.
+    function orderCouponIsValid(data) {
+      let path = /databases/$(database)/documents/coupons/$(data.coupon.code);
+      return data.coupon.code is string
+        && couponIsLive(get(path).data)
+        && getAfter(path).data.usedCount == get(path).data.usedCount + 1
+        && data.discount is number
+        && data.discount >= 0
+        && data.discount <= data.subtotal
+        && data.totalPrice <= data.subtotal;
+    }
+
+    function isValidNewOrder() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['user', 'userId', 'location', 'cartItems', 'totalPrice',
+                                  'createdAt', 'subtotal', 'discount', 'coupon'])
+        && data.keys().hasAll(['user', 'location', 'cartItems', 'totalPrice', 'createdAt'])
+        && data.cartItems is list
+        && data.cartItems.size() > 0
+        && data.totalPrice is number
+        && data.totalPrice >= 0
+        && data.createdAt == request.time
+        && (data.get('userId', null) == null
+            || (signedIn() && data.userId == request.auth.uid))
+        && (!('coupon' in data) || orderCouponIsValid(data));
+    }
+
+    // Customers may only add one new return request to a delivered order, and
+    // can't touch earlier ones. Everything after that step is staff only.
+    function isNewReturnRequest() {
+      let before = resource.data.get('returns', []);
+      let after = request.resource.data.returns;
+      return changedOnly(['returns'])
+        && resource.data.status == 'completed'
+        && after is list
+        && after.size() == before.size() + 1
+        && (before.size() == 0 || after[0:before.size()] == before)
+        && after[before.size()].status == 'requested'
+        && after[before.size()].source == 'customer';
+    }
+
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /posts/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+      // Anyone can add one like; nothing else can change.
+      allow update: if changedOnly(['likes'])
+        && request.resource.data.likes == resource.data.get('likes', 0) + 1;
+    }
+
+    match /order/{id} {
+      allow create: if isValidNewOrder();
+      allow read: if isStaff() || ownsOrder();
+      allow update: if isStaff() || (ownsOrder() && isNewReturnRequest());
+      allow delete: if isStaff();
+    }
+
+    match /coupons/{code} {
+      // Knowing a code lets you look it up. Only those marked for the site can be listed.
+      allow get: if true;
+      allow list: if isStaff() || resource.data.showOnSite == true;
+      allow create, delete: if isStaff();
+      // Customers can only count one use, and only while the coupon is live.
+      allow update: if isStaff()
+        || (changedOnly(['usedCount'])
+            && request.resource.data.usedCount == resource.data.usedCount + 1
+            && couponIsLive(resource.data));
+
+      match /redemptions/{key} {
+        allow get: if true;
+        allow list, delete: if isStaff();
+        allow create: if isStaff()
+          || (request.resource.data.keys().hasOnly(['count']) && request.resource.data.count == 1);
+        allow update: if isStaff()
+          || (request.resource.data.keys().hasOnly(['count'])
+              && request.resource.data.count == resource.data.count + 1);
+      }
+    }
+
+    match /couponOffers/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    // A customer's request to buy a coupon. It carries no discount: the code
+    // comes from the offer when staff confirm the payment.
+    function isValidPurchaseRequest(id) {
+      let data = request.resource.data;
+      let offer = get(/databases/$(database)/documents/couponOffers/$(data.offerId)).data;
+      return signedIn()
+        && data.keys().hasOnly(['offerId', 'offerTitle', 'price', 'buyer', 'reference', 'token',
+                                'paymentMethod', 'hasReceipt', 'status', 'createdAt'])
+        && data.buyer.uid == request.auth.uid
+        && data.status == 'pending'
+        && offer.enabled == true
+        && data.price == offer.price
+        && data.offerTitle == offer.title
+        && data.reference is string
+        && data.reference.size() <= 200
+        && data.token.matches('^TKN-[A-Z2-9]{6}$')
+        && data.paymentMethod is string
+        && data.hasReceipt == true
+        && existsAfter(/databases/$(database)/documents/couponReceipts/$(id))
+        && data.createdAt == request.time;
+    }
+
+    match /couponPurchases/{id} {
+      allow create: if isValidPurchaseRequest(id);
+      allow read: if isStaff() || (signedIn() && resource.data.buyer.uid == request.auth.uid);
+      allow update, delete: if isStaff();
+    }
+
+    // Payment receipts live here rather than at a public image link, so only
+    // the buyer and staff can ever see one. Saved once, with its purchase.
+    match /couponReceipts/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isStaff();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'image', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.image is string
+        && request.resource.data.image.size() <= 900000
+        && request.resource.data.image.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/couponPurchases/$(id)).data.buyer.uid == request.auth.uid;
+    }
+
+    // Free to enter: nothing here may ever depend on a purchase.
+    match /rewardDraws/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /rewardEntries/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isStaff();
+      // One per account: the ID is fixed, and an existing entry can't be overwritten.
+      allow create: if signedIn()
+        && id == request.resource.data.drawId + '_' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['drawId', 'uid', 'name', 'phone', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.phone is string
+        && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/rewardDraws/$(request.resource.data.drawId)).data.visible == true
+        && request.time <= timestamp.value(get(/databases/$(database)/documents/rewardDraws/$(request.resource.data.drawId)).data.closesAt);
+    }
+
+    match /contactMessages/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 5000
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /dashboardUsers/{userEmail} {
+      allow read: if isStaff() || (signedIn() && userEmail == email());
+      allow write: if isOwner();
+    }
+  }
+}

@@ -7,7 +7,11 @@ import Link from 'next/link'
 import SectionHead from '../components/SectionHead'
 import Grid from '../components/Grid'
 import ProductCard from '../components/ProductCard'
+import CouponStrip from '../components/CouponStrip'
 import { fetchProducts } from '../redux/products/productsSlice'
+import { fetchSiteCoupons } from '../redux/coupons/couponsSlice'
+import { fetchOffers } from '../redux/couponSales/couponSalesSlice'
+import { offersOnSale } from '../data/couponSales'
 import { discountPercent, expiryState, isSellable } from '../data/grocery'
 
 /**
@@ -17,9 +21,15 @@ import { discountPercent, expiryState, isSellable } from '../data/grocery'
 function Deals() {
   const dispatch = useDispatch()
   const allProducts = useSelector(state => state.products.items)
+  const siteCoupons = useSelector(state => state.coupons.site)
+  const offers = useSelector(state => state.couponSales.offers)
+  const couponShop = useSelector(state => state.settings.values.couponShop)
+  const hasOffers = siteCoupons.length > 0 || offersOnSale(offers, couponShop).length > 0
 
   useEffect(() => {
     dispatch(fetchProducts())
+    dispatch(fetchSiteCoupons())
+    dispatch(fetchOffers())
   }, [dispatch])
 
   const { reduced, clearing } = useMemo(() => {
@@ -32,7 +42,7 @@ function Deals() {
     }
   }, [allProducts])
 
-  const nothing = !reduced.length && !clearing.length
+  const nothing = !reduced.length && !clearing.length && !hasOffers
 
   return (
     <>
@@ -40,6 +50,13 @@ function Deals() {
         <title>Deals</title>
         <meta name="description" content="Marked-down groceries and items to use up this week." />
       </Head>
+
+      {hasOffers && (
+        <section className="home-block">
+          <SectionHead title="Offers for you" note="Copy a code to get started" />
+          <CouponStrip />
+        </section>
+      )}
 
       {reduced.length > 0 && (
         <section className="home-block">

@@ -12,12 +12,15 @@ import Layout from '../components/Layout'
 import { hydrate } from '../redux/shopping-cart/cartItemsSlide'
 import { fetchCategories } from '../redux/categories/categoriesSlice'
 import { fetchSettings } from '../redux/settings/settingsSlice'
+import { fetchDraws } from '../redux/rewards/rewardsSlice'
+import { fetchOffers } from '../redux/couponSales/couponSalesSlice'
 
 import { LoadingProvider, LoadingContext } from '../context/LoadingContext'
 import Loader from '../components/Loader'
 import WhatsAppButton from '@/components/WhatsAppButton'
 
 import { AuthProvider } from '../context/AuthContext'
+import useInspectGuard from '../lib/useInspectGuard'
 
 /**
  * One bootstrap for data both halves of the app need on every route: the
@@ -31,6 +34,8 @@ function Bootstrap({ children }) {
     dispatch(hydrate())
     dispatch(fetchCategories())
     dispatch(fetchSettings())
+    dispatch(fetchDraws())
+    dispatch(fetchOffers())
   }, [dispatch])
 
   return children
@@ -49,6 +54,7 @@ function AppWrapper({ children }) {
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter()
+  useInspectGuard()
   // The back-office runs its own chrome — no storefront shell, no shop widgets.
   const isDashboard = router.pathname.startsWith('/dashboard')
 

@@ -49,3 +49,17 @@ SMTP_FROM=orders@example.com
 NEXT_PUBLIC_SITE_URL=https://your-domain.example
 STORE_NAME=A-one Grocery
 ```
+
+## Firestore security rules
+
+The rules are in `firestore.rules`. To test them on a local emulator (needs Java 11 or newer; nothing touches the live project):
+
+```bash
+cd firestore-tests
+npm install
+npm test
+```
+
+Publish by pasting the file into **Firebase console → Firestore Database → Rules**. Copy the old rules somewhere first, so you can restore them.
+
+If you add an owner, add their email to `isOwner()` in `firestore.rules` as well as `NEXT_PUBLIC_ADMIN_EMAILS`.

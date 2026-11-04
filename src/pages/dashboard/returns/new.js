@@ -15,6 +15,7 @@ import { createReturn } from "@/redux/admin/ordersSlice";
 import { formatDateTime, orderTotal } from "@/lib/analytics";
 import { formatMoney } from "@/data/grocery";
 import { RETURN_REASONS, canStartReturn, returnableQty, shortOrderId } from "@/data/returns";
+import { unitPaid } from "@/data/fulfilment";
 
 /** Records a return against a completed order: /dashboard/returns/new?order=<id>. */
 export default function NewReturnPage() {
@@ -56,7 +57,7 @@ export default function NewReturnPage() {
     .filter((row) => row.max > 0);
   const chosen = lines.filter(({ line }) => selection[line] > 0);
   const units = chosen.reduce((sum, { line }) => sum + selection[line], 0);
-  const value = chosen.reduce((sum, { item, line }) => sum + selection[line] * (Number(item.price) || 0), 0);
+  const value = chosen.reduce((sum, { item, line }) => sum + selection[line] * unitPaid(item), 0);
 
   const submit = async () => {
     try {
@@ -86,7 +87,7 @@ export default function NewReturnPage() {
                   <div className="min-w-[150px] flex-1">
                     <p className="truncate font-semibold text-slate-800">{item.title}</p>
                     <p className="text-sm text-slate-400">
-                      {formatMoney(item.price)} each · {max} returnable
+                      {formatMoney(unitPaid(item))} each · {max} returnable
                     </p>
                   </div>
                   <QtyStepper

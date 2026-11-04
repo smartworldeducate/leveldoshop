@@ -12,7 +12,11 @@ export async function fetchCustomerOrders(user) {
   const orders = collection(db, "order");
   const snaps = await Promise.all([
     getDocs(query(orders, where("userId", "==", user.uid))),
-    ...(user.email ? [getDocs(query(orders, where("user.email", "==", user.email)))] : []),
+    // Security rules only allow this for verified emails, so an unverified account
+    // still gets the orders on its own account rather than an error.
+    ...(user.email
+      ? [getDocs(query(orders, where("user.email", "==", user.email))).catch(() => ({ docs: [] }))]
+      : []),
   ]);
 
   const byId = new Map();

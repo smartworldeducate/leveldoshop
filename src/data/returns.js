@@ -10,7 +10,7 @@
 // these inside a Firestore transaction, against freshly read data.
 // ============================================================
 
-import { deliveredQty, shortValue } from "./fulfilment";
+import { deliveredQty, shortValue, unitPaid } from "./fulfilment";
 
 export const RETURN_REASONS = [
   { value: "damaged", label: "Damaged on arrival" },
@@ -161,7 +161,7 @@ export function buildReturn(order, { selection, reason, note = "", source = "sta
         productId: item.productId || null,
         title: item.title || "",
         image: item.images?.[0] || null,
-        price: Number(item.price) || 0,
+        price: unitPaid(item),
         quantity,
         restocked: 0,
       };
