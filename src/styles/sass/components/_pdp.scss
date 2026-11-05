@@ -100,28 +100,51 @@ $pdp-line: rgba($main-color, 0.1);
         }
     }
 
+    // No photo yet: a shorter, calm panel rather than a huge empty square.
+    &__stage.no-photo {
+        aspect-ratio: 5 / 4;
+
+        @include mobile {
+            aspect-ratio: 16 / 10;
+        }
+    }
+
     &__glyph {
         position: absolute;
         inset: 0;
         display: flex;
+        flex-direction: column;
+        gap: 12px;
         align-items: center;
         justify-content: center;
-        background:
-            radial-gradient(45% 45% at 50% 45%, rgba(#fff, 0.95), transparent 72%),
-            linear-gradient(
-                150deg,
-                color-mix(in srgb, var(--aisle-accent, #{$main-color}) 16%, #fff),
-                color-mix(in srgb, var(--aisle-accent, #{$main-color}) 5%, #fff)
-            );
+        background: linear-gradient(
+            150deg,
+            color-mix(in srgb, var(--aisle-accent, #{$main-color}) 14%, #fff),
+            color-mix(in srgb, var(--aisle-accent, #{$main-color}) 4%, #fff)
+        );
 
         i {
-            font-size: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 104px;
+            height: 104px;
+            border-radius: 50%;
+            background: rgba(#fff, 0.85);
+            font-size: 50px;
             color: var(--aisle-accent, $main-color);
-            opacity: 0.55;
 
             @include mobile {
-                font-size: 88px;
+                width: 78px;
+                height: 78px;
+                font-size: 38px;
             }
+        }
+
+        small {
+            font-size: 13px;
+            font-weight: 500;
+            color: $txt-second-color;
         }
     }
 
@@ -498,18 +521,51 @@ $pdp-line: rgba($main-color, 0.1);
     }
 
     /* delivery promises (from the dashboard) */
+    &__inbasket {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 14px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: $pdp-success;
+
+        i {
+            font-size: 18px;
+        }
+
+        a {
+            margin-left: 4px;
+            color: $main-color;
+            text-decoration: underline;
+        }
+    }
+
     &__promises {
         display: grid;
-        gap: 14px;
-        margin-top: 26px;
-        padding-top: 22px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
         border-top: 1px solid $pdp-line;
         list-style: none;
 
+        @include mobile {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
         li {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+
+            @include mobile {
+                flex-direction: row;
+                align-items: center;
+                gap: 12px;
+            }
         }
 
         i {
@@ -548,12 +604,26 @@ $pdp-line: rgba($main-color, 0.1);
         display: grid;
         grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
         gap: 24px;
-        align-items: start;
+        align-items: stretch;
         margin-top: 40px;
 
+        // With no description, the details spread across the page in columns.
         &.is-specs-only {
             grid-template-columns: minmax(0, 1fr);
-            max-width: 640px;
+
+            .pdp__specs {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 0 36px;
+
+                @include tablet {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+
+                @include mobile {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
         }
 
         @include tablet {
@@ -611,11 +681,8 @@ $pdp-line: rgba($main-color, 0.1);
             justify-content: space-between;
             gap: 16px;
             padding: 11px 0;
+            border-bottom: 1px dashed $pdp-line;
             font-size: 13.5px;
-
-            + div {
-                border-top: 1px dashed $pdp-line;
-            }
         }
 
         dt {
@@ -791,4 +858,16 @@ $pdp-line: rgba($main-color, 0.1);
 @keyframes pdp-shimmer {
     from { background-position: 200% 0; }
     to { background-position: -200% 0; }
+}
+
+// The floating WhatsApp button would sit on top of the phone buy bar.
+@include mobile {
+    body:has(.pdp__buybar) .whatsapp-float {
+        bottom: 84px;
+    }
+}
+
+// This font's default numbers dip below the line: "1L" looked like a small "i".
+.pdp__title {
+    font-variant-numeric: lining-nums;
 }

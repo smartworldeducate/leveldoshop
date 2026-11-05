@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 import { AlertCircle, ArrowLeft, Check, CheckCircle2, Copy, Gift, ImagePlus, TicketPercent, X } from 'lucide-react'
 
 import { useAuth } from '../../context/AuthContext'
+import ContactLink from '../../components/ContactLink'
+import PayPalButton from '../../components/PayPalButton'
 import PurchaseSteps from '../../components/PurchaseSteps'
 import { compressReceipt } from '../../lib/compressReceipt'
 import { forgetToken, recallToken } from '../../lib/buyToken'
@@ -15,8 +17,24 @@ import { fetchDraws } from '../../redux/rewards/rewardsSlice'
 import { categoryLabel, formatMoney } from '../../data/grocery'
 import { describeDiscount, describeTerms } from '../../data/coupons'
 import { whatsappNumber } from '../../data/notifications'
-import { accountToCopy, couponShopIsOpen, dayCountdown, formatRewardDay, offerStatus, paymentMethods } from '../../data/couponSales'
+import {
+  ALL_COUNTRIES,
+  accountToCopy,
+  countryName,
+  couponShopIsOpen,
+  dayCountdown,
+  formatRewardDay,
+  guessCountry,
+  hasMethodForAnyCountry,
+  methodPaidBy,
+  methodsForCountry,
+  offerStatus,
+  paymentCountries,
+  paymentMethods,
+} from '../../data/couponSales'
 import { drawStatus, formatDrawDate } from '../../data/rewards'
+
+const COUNTRY_KEY = 'payCountry'
 
 export default function BuyCoupon() {
   const router = useRouter()
@@ -45,7 +63,14 @@ export default function BuyCoupon() {
   const [dragging, setDragging] = useState(false)
   const [sent, setSent] = useState(null)
 
-  const method = methods.find((m) => m.id === methodId)
+  // Customers choose their country, then see only the methods that work there.
+  const countries = useMemo(() => paymentCountries(methods), [methods])
+  const hasForAnyCountry = hasMethodForAnyCountry(methods)
+  const countryOptions = hasForAnyCountry ? [...countries, ALL_COUNTRIES] : countries
+  const [country, setCountry] = useState('')
+  const [guessed, setGuessed] = useState('')
+  const shown = methodsForCountry(methods, country)
+  const method = shown.find((m) => m.id === methodId)
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
   useEffect(() => () => previewUrl && URL.revokeObjectURL(previewUrl), [previewUrl])
@@ -86,8 +111,41 @@ export default function BuyCoupon() {
   }, [lastPhone])
 
   useEffect(() => {
-    if (methods.length === 1 && !methodId) setMethodId(methods[0].id)
-  }, [methods, methodId])
+    // Not before a country is chosen, or it could pick a method they never saw offered.
+    if (country && shown.length === 1 && !method) setMethodId(shown[0].id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown.length, method, country])
+
+  // Start from their last choice, or a guess from this device's settings.
+  useEffect(() => {
+    if (country || !countryOptions.length) return
+    let saved = ''
+    try {
+      saved = localStorage.getItem(COUNTRY_KEY) || ''
+    } catch {
+      // Private window: use the guess.
+    }
+    const guess = guessCountry({
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+    })
+    setGuessed(guess)
+    const wanted = [saved, guess].find((code) => countryOptions.includes(code))
+    setCountry(wanted || (hasForAnyCountry ? ALL_COUNTRIES : countryOptions[0]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryOptions.join(), country])
+
+  const chooseCountry = (code) => {
+    setCountry(code)
+    setMethodId('')
+    setGuessed('')
+    setErrors((prev) => ({ ...prev, method: '' }))
+    try {
+      localStorage.setItem(COUNTRY_KEY, code)
+    } catch {
+      // It's only a convenience.
+    }
+  }
 
   const copy = async (text, message) => {
     try {
@@ -119,11 +177,12 @@ export default function BuyCoupon() {
     takeFile(e.dataTransfer.files?.[0])
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
+  const isPaypal = method?.type === 'paypal'
+
+  const checkForm = () => {
     const found = {}
     if (!method) found.method = 'Choose how you paid'
-    if (!file) found.file = 'Upload a screenshot or photo of your receipt'
+    if (!isPaypal && !file) found.file = 'Upload a screenshot or photo of your receipt'
     if (!name.trim()) found.name = 'Enter your name'
     if (!whatsappNumber(phone)) found.phone = 'Enter a valid phone number'
     setErrors(found)
@@ -132,8 +191,15 @@ export default function BuyCoupon() {
       // The button is at the end of the page, and the problem may be off-screen.
       toast.error(found[firstError])
       document.getElementById(`buy-${firstError}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
     }
+    return !firstError
+  }
+
+  const buyerDetails = () => ({ uid: user.uid, email: user.email || '', name: name.trim(), phone: phone.trim() })
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (isPaypal || !checkForm()) return
 
     setSaving('Preparing your receipt…')
     try {
@@ -145,12 +211,12 @@ export default function BuyCoupon() {
           token,
           reference,
           receipt,
-          paymentMethod: method.name,
-          buyer: { uid: user.uid, email: user.email || '', name: name.trim(), phone: phone.trim() },
+          paymentMethod: methodPaidBy(method),
+          buyer: buyerDetails(),
         })
       ).unwrap()
       forgetToken(offer.id)
-      setSent({ at: new Date(), method: method.name })
+      setSent({ at: new Date(), method: methodPaidBy(method) })
       window.scrollTo({ top: 0 })
     } catch {
       toast.error('We could not send this. Your details are still here, so please try again.')
@@ -173,7 +239,7 @@ export default function BuyCoupon() {
           <div className="buy-done">
             <header className="buy-done__head">
               <CheckCircle2 size={44} />
-              <h1>We've received your details</h1>
+              <h1>{sent.paypal ? 'PayPal has taken your payment' : "We've received your details"}</h1>
               <p>Thank you, {name}. You don't need to do anything else right now.</p>
             </header>
 
@@ -236,7 +302,7 @@ export default function BuyCoupon() {
                 <Link href="/catalog" className="shop-btn shop-btn--ghost">Continue shopping</Link>
               </div>
 
-              <p className="buy-done__help">Have a question? <Link href="/contact">Contact us</Link> and give your reference.</p>
+              <p className="buy-done__help">Have a question? <ContactLink message={`Hello, I have a question about my coupon. My reference is ${token}.`} /> and give your reference.</p>
             </div>
           </div>
         </div>
@@ -299,8 +365,24 @@ export default function BuyCoupon() {
           <div className="my-orders__list">
             <section className="return-form">
               <h2><StepNumber n={1} done={Boolean(method)} /> Choose how to pay</h2>
+              {countryOptions.length > 1 ? (
+                <div className="checkout-field pay-country">
+                  <label htmlFor="buy-country">Which country are you paying from?</label>
+                  <select id="buy-country" value={country} onChange={(e) => chooseCountry(e.target.value)}>
+                    {countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
+                    {hasForAnyCountry && <option value={ALL_COUNTRIES}>{countries.length ? 'Another country' : 'Any country'}</option>}
+                  </select>
+                </div>
+              ) : (
+                countries.length === 1 && <p className="pay-country__only">Payment from {countryName(countries[0])}</p>
+              )}
+              {guessed && !hasForAnyCountry && !countryOptions.includes(guessed) && (
+                <p className="pay-note">
+                  We can't take payment from {countryName(guessed)} yet. <ContactLink /> if you need help.
+                </p>
+              )}
               <div id="buy-method" className="pay-methods" role="radiogroup" aria-label="Payment method">
-                {methods.map((m) => (
+                {shown.map((m) => (
                   <button
                     key={m.id}
                     type="button"
@@ -319,6 +401,7 @@ export default function BuyCoupon() {
               {errors.method && <small className="checkout-pin is-error">{errors.method}</small>}
             </section>
 
+            {!isPaypal && (<>
             <section className="return-form">
               <h2><StepNumber n={2} done={Boolean(file)} /> Send the money</h2>
               <p className="pay-amount">
@@ -373,9 +456,10 @@ export default function BuyCoupon() {
               )}
               {errors.file && <small className="checkout-pin is-error">{errors.file}</small>}
             </section>
+            </>)}
 
             <section className="return-form">
-              <h2><StepNumber n={4} done={Boolean(name.trim() && whatsappNumber(phone))} /> Your details</h2>
+              <h2><StepNumber n={isPaypal ? 2 : 4} done={Boolean(name.trim() && whatsappNumber(phone))} /> Your details</h2>
               <div className="checkout-fields">
                 <div className="checkout-field">
                   <label htmlFor="buy-name">Your name</label>
@@ -387,11 +471,13 @@ export default function BuyCoupon() {
                   <input id="buy-phone" name="phone" type="tel" autoComplete="tel" placeholder="03001234567" value={phone} aria-invalid={Boolean(errors.phone)} onChange={(e) => { setPhone(e.target.value); setErrors((prev) => ({ ...prev, phone: '' })) }} />
                   <small className={errors.phone ? 'is-error' : ''}>{errors.phone || "We'll send your code here."}</small>
                 </div>
-                <div className="checkout-field checkout-field--wide">
-                  <label htmlFor="buy-reference">Transaction ID (optional)</label>
-                  <input id="buy-reference" name="reference" autoComplete="off" value={reference} onChange={(e) => setReference(e.target.value)} />
-                  <small>Helps us find your payment faster.</small>
-                </div>
+                {!isPaypal && (
+                  <div className="checkout-field checkout-field--wide">
+                    <label htmlFor="buy-reference">Transaction ID (optional)</label>
+                    <input id="buy-reference" name="reference" autoComplete="off" value={reference} onChange={(e) => setReference(e.target.value)} />
+                    <small>Helps us find your payment faster.</small>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -410,10 +496,26 @@ export default function BuyCoupon() {
                 <span>You pay</span>
                 <strong>{formatMoney(offer.price)}</strong>
               </div>
-              <button type="submit" className="shop-btn shop-btn--block" disabled={Boolean(saving)}>
-                {saving || 'Send for verification'}
-              </button>
-              <small>Your code arrives once we've checked your payment.</small>
+              {isPaypal ? (
+                <PayPalButton
+                  offer={offer}
+                  token={token}
+                  user={user}
+                  buyer={buyerDetails}
+                  paidBy={methodPaidBy(method)}
+                  validate={checkForm}
+                  onPaid={() => {
+                    forgetToken(offer.id)
+                    setSent({ at: new Date(), method: methodPaidBy(method), paypal: true })
+                    window.scrollTo({ top: 0 })
+                  }}
+                />
+              ) : (
+                <button type="submit" className="shop-btn shop-btn--block" disabled={Boolean(saving)}>
+                  {saving || 'Send for verification'}
+                </button>
+              )}
+              <small>Your code arrives once we've confirmed your payment.</small>
             </section>
           </aside>
         </div>

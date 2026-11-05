@@ -8,17 +8,13 @@ import { categoryLabel, formatMoney } from '../data/grocery'
 import { describeDiscount, describeTerms, discountStub } from '../data/coupons'
 import { dayCountdown, formatRewardDay, offerLeft, offerStatus } from '../data/couponSales'
 
-/** One ticket spreads out across the page; two share it. */
-export const ticketGridClass = (count) =>
-  `ticket-grid${count === 1 ? ' ticket-grid--solo' : count === 2 ? ' ticket-grid--pair' : ''}`
-
-const Top = ({ coupon, tag, title }) => {
+const Stub = ({ coupon, tag }) => {
   const { big, small } = discountStub(coupon)
   return (
-    <div className="ticket__top">
+    <div className="ticket__stub">
       <span className="ticket__tag">{tag}</span>
-      <p className="ticket__amount"><strong>{big}</strong> <span>{small}</span></p>
-      <h3>{title}</h3>
+      <strong>{big}</strong>
+      <span className="ticket__off">{small}</span>
     </div>
   )
 }
@@ -50,9 +46,10 @@ export function OfferTicket({ offer, compact = false, preview = false }) {
 
   return (
     <article className={`ticket${soldOut ? ' is-sold-out' : ''}`}>
-      <Top coupon={offer} tag="Coupon to buy" title={offer.title || 'Your coupon name'} />
+      <Stub coupon={offer} tag="To buy" />
       <Tear />
       <div className="ticket__body">
+        <h3>{offer.title || 'Your coupon name'}</h3>
         <Gives coupon={offer} title={offer.title} />
         {!compact && offer.description && <p>{offer.description}</p>}
         {!compact && (
@@ -77,14 +74,14 @@ export function OfferTicket({ offer, compact = false, preview = false }) {
             <strong>{formatMoney(offer.price)}</strong>
           </div>
           {soldOut && <span className="ticket__soldout">Sold out</span>}
+          {!soldOut && !preview && <OfferBuyButton offerId={offer.id} />}
+          {!soldOut && preview && (
+            <div className="offer-copy" aria-hidden="true">
+              <span>TKN-XXXXXX</span>
+              <small>Copy to buy <Copy size={14} /></small>
+            </div>
+          )}
         </div>
-        {!soldOut && !preview && <OfferBuyButton offerId={offer.id} />}
-        {!soldOut && preview && (
-          <div className="offer-copy" aria-hidden="true">
-            <span>TKN-XXXXXX</span>
-            <small>Copy to buy <Copy size={14} /></small>
-          </div>
-        )}
       </div>
     </article>
   )
@@ -101,9 +98,10 @@ export function FreeTicket({ coupon, code = coupon.code, compact = false, previe
 
   return (
     <article className="ticket ticket--free">
-      <Top coupon={coupon} tag="Free code" title={coupon.label || 'Discount code'} />
+      <Stub coupon={coupon} tag="Free" />
       <Tear />
       <div className="ticket__body">
+        <h3>{coupon.label || 'Discount code'}</h3>
         <Gives coupon={coupon} title={coupon.label} />
         {!compact && terms.length > 0 && (
           <ul className="ticket__terms">
@@ -121,11 +119,11 @@ export function FreeTicket({ coupon, code = coupon.code, compact = false, previe
             <small>You pay</small>
             <strong>Free</strong>
           </div>
+          <Button className="offer-copy" {...action}>
+            <span>{code || 'YOURCODE'}</span>
+            <small>Copy and use <Copy size={14} /></small>
+          </Button>
         </div>
-        <Button className="offer-copy" {...action}>
-          <span>{code || 'YOURCODE'}</span>
-          <small>Copy and use <Copy size={14} /></small>
-        </Button>
       </div>
     </article>
   )

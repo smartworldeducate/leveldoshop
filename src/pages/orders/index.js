@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import ContactLink from '../../components/ContactLink'
 import { useRouter } from 'next/router'
 import { useSelector } from 'react-redux'
 import {
@@ -208,7 +209,7 @@ function OrderCard({ order, settings }) {
           block ? (
             <p className="my-order__hint">
               {block === 'expired' ? 'The return window has closed.' : 'Online returns are unavailable.'}{' '}
-              <Link href="/contact">Contact us</Link> if something is wrong.
+              <ContactLink /> if something is wrong.
             </p>
           ) : (
             <div className="my-order__action">
@@ -324,7 +325,7 @@ export default function MyOrders() {
             <section className="side-card">
               <h2><MessageCircle size={18} /> Need help?</h2>
               <p>
-                Something else wrong with an order? <Link href="/contact">Contact us</Link> and we'll sort it out.
+                Something else wrong with an order? <ContactLink /> and we'll sort it out.
               </p>
             </section>
           </aside>

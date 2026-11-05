@@ -5,7 +5,6 @@ import productsReducer from './products/productsSlice'
 import categoriesReducer from './categories/categoriesSlice'
 import settingsReducer from './settings/settingsSlice'
 import ordersReducer from './admin/ordersSlice'
-import contactReducer from './contact/contactSlice'
 import postReducer from './posts/postsSlice'
 import couponsReducer from './coupons/couponsSlice'
 import couponSalesReducer from './couponSales/couponSalesSlice'
@@ -21,12 +20,14 @@ const store = configureStore({
         categories: categoriesReducer,
         settings: settingsReducer,
         adminOrders: ordersReducer,
-        contact: contactReducer,
         posts: postReducer,
         coupons: couponsReducer,
         couponSales: couponSalesReducer,
         rewards: rewardsReducer,
     },
+    // Firestore timestamps are kept in the store on purpose (see lib/analytics),
+    // so this check only filled the console with warnings on every page.
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 })
 
 export default store

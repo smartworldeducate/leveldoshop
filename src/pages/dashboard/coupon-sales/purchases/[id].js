@@ -11,6 +11,7 @@ import Button from "@/components/dashboard/ui/Button";
 import EmptyState from "@/components/dashboard/ui/EmptyState";
 import Field, { Textarea } from "@/components/dashboard/ui/Field";
 import PrivateReceipt from "@/components/PrivateReceipt";
+import PayPalCheck from "@/components/dashboard/PayPalCheck";
 
 import { confirmPurchase, fetchPurchases, rejectPurchase, revokePurchase } from "@/redux/couponSales/couponSalesSlice";
 import { fetchDraws } from "@/redux/rewards/rewardsSlice";
@@ -62,6 +63,7 @@ export default function PurchaseReviewPage() {
   const [note, setNote] = useState("");
   const [revoking, setRevoking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [paypal, setPaypal] = useState(null);
 
   const purchase = purchases.find((p) => p.id === router.query.id);
 
@@ -72,6 +74,7 @@ export default function PurchaseReviewPage() {
 
   // The same page is reused when moving on to the next payment.
   useEffect(() => {
+    setPaypal(null);
     setRejecting(false);
     setRevoking(false);
     setNote("");
@@ -141,11 +144,15 @@ export default function PurchaseReviewPage() {
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <Card>
           <CardHeader
-            title="Payment receipt"
-            subtitle="Check your account as well: a screenshot can be faked."
+            title={purchase.paypalOrderId ? "PayPal payment" : "Payment receipt"}
+            subtitle={purchase.paypalOrderId ? "This answer comes directly from PayPal." : "Check your account as well: a screenshot can be faked."}
           />
           <div className="mt-5">
-            <PrivateReceipt purchase={purchase} className="max-h-[72vh] max-w-full rounded-xl object-contain" />
+            {purchase.paypalOrderId ? (
+              <PayPalCheck key={purchase.id} purchase={purchase} onResult={setPaypal} />
+            ) : (
+              <PrivateReceipt purchase={purchase} className="max-h-[72vh] max-w-full rounded-xl object-contain" />
+            )}
           </div>
           {purchase.screenshot && (
             <p className="mt-3 flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
@@ -202,7 +209,12 @@ export default function PurchaseReviewPage() {
                 <>
                   <CardHeader title="Have you received this money?" subtitle="Confirming creates a working code straight away." />
                   <div className="mt-4 flex flex-col gap-2">
-                    <Button icon={CheckCircle2} loading={busy} onClick={() => act(confirmPurchase(purchase.id), "Payment confirmed. The code is ready to send.")}>
+                    <Button
+                      icon={CheckCircle2}
+                      loading={busy}
+                      disabled={Boolean(purchase.paypalOrderId) && !paypal?.paid}
+                      onClick={() => act(confirmPurchase(purchase.id), "Payment confirmed. The code is ready to send.")}
+                    >
                       Yes, confirm payment
                     </Button>
                     <Button variant="softDanger" icon={X} onClick={() => setRejecting(true)}>Reject</Button>

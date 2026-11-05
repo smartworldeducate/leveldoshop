@@ -15,9 +15,7 @@ export const SETTINGS_DOC = ["settings", "storefront"];
 
 /** Pages that can be switched off. `catalog`, `cart` and the home page cannot. */
 export const TOGGLEABLE_PAGES = [
-  { key: "deals", label: "Deals", href: "/deals", note: "Marked-down and use-it-soon items" },
   { key: "posts", label: "Blog", href: "/posts", note: "Recipes and store news" },
-  { key: "contact", label: "Contact", href: "/contact", note: "Contact form and store details" },
   { key: "policy", label: "Policies", href: "/policy", note: "Delivery, freshness, payment" },
 ];
 

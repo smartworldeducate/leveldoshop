@@ -1,5 +1,5 @@
-// Server-side reads made as the signed-in staff member, using their Firebase ID
-// token over REST, so Firestore security rules apply as they do in the browser.
+// Server-side reads made as the signed-in person, using their Firebase ID token
+// over REST, so Firestore security rules apply as they do in the browser.
 import { firebaseConfig } from "../firebaseClient";
 
 const DOCS = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
@@ -18,7 +18,7 @@ const decodeFields = (fields) =>
   Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, decode(value)]));
 
 async function getDocument(path, token) {
-  const res = await fetch(`${DOCS}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(`${DOCS}/${path}`, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Firestore read failed (${res.status})`);
   return decodeFields((await res.json()).fields || {});
@@ -32,7 +32,7 @@ export async function verifyUser(token) {
   );
   if (!res.ok) return null;
   const user = (await res.json()).users?.[0];
-  return user?.email ? { email: user.email } : null;
+  return user?.email ? { email: user.email, uid: user.localId } : null;
 }
 
 export const isDashboardUser = async (email, token) =>
@@ -40,5 +40,18 @@ export const isDashboardUser = async (email, token) =>
 
 export async function readOrder(id, token) {
   const data = await getDocument(`order/${encodeURIComponent(id)}`, token);
+  return data && { id, ...data };
+}
+
+/** Offers and shop settings are public, so these need no token. */
+export async function readOffer(id) {
+  const data = await getDocument(`couponOffers/${encodeURIComponent(id)}`);
+  return data && { id, ...data };
+}
+
+export const readShop = async () => (await getDocument("settings/storefront"))?.couponShop || null;
+
+export async function readPurchase(id, token) {
+  const data = await getDocument(`couponPurchases/${encodeURIComponent(id)}`, token);
   return data && { id, ...data };
 }

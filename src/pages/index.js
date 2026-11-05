@@ -11,6 +11,7 @@ import SectionHead from '../components/SectionHead'
 import ProductRail from '../components/ProductRail'
 import Grid from '../components/Grid'
 import ProductCard from '../components/ProductCard'
+import ContactLink from '../components/ContactLink'
 import CouponStrip from '../components/CouponStrip'
 
 import { discountPercent, expiryState, isSellable, visibleCategories } from '../data/grocery'
@@ -148,9 +149,8 @@ export default function Home() {
             title={head('deals').title}
             note={head('deals').note}
             href={
-              pages?.deals === false && head('deals').linkHref === '/deals'
-                ? undefined
-                : head('deals').linkHref || undefined
+              // Saved before the Deals page was removed.
+              head('deals').linkHref === '/deals' ? '/catalog' : head('deals').linkHref || undefined
             }
             linkLabel={head('deals').linkLabel}
           />
@@ -341,10 +341,14 @@ export default function Home() {
               <Link href={orDefault(closer.primaryHref, '/catalog')} className="closer__primary">
                 {orDefault(closer.primaryLabel, 'Start shopping')}
               </Link>
-              {closer.ghostLabel && closer.ghostHref && pages?.contact !== false && (
-                <Link href={closer.ghostHref} className="closer__ghost">
-                  {closer.ghostLabel}
-                </Link>
+              {closer.ghostLabel && closer.ghostHref && (
+                closer.ghostHref === '/contact' ? (
+                  <ContactLink className="closer__ghost">{closer.ghostLabel}</ContactLink>
+                ) : (
+                  <Link href={closer.ghostHref} className="closer__ghost">
+                    {closer.ghostLabel}
+                  </Link>
+                )
               )}
             </div>
           </div>

@@ -63,3 +63,15 @@ npm test
 Publish by pasting the file into **Firebase console → Firestore Database → Rules**. Copy the old rules somewhere first, so you can restore them.
 
 If you add an owner, add their email to `isOwner()` in `firestore.rules` as well as `NEXT_PUBLIC_ADMIN_EMAILS`.
+
+## PayPal (coupon sales)
+
+Set these on the server, for example in `.env.local`. Never commit them, and never give the secret a `NEXT_PUBLIC_` name.
+
+```
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_API_BASE=https://api-m.paypal.com
+```
+
+Customers only see PayPal once it's added under Sell coupons → Payment methods. Staff confirm each purchase after seeing PayPal's own answer on the review page. Rules for it are in `firestore.rules`, so publish them first.

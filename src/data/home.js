@@ -162,7 +162,7 @@ export const DEFAULT_HOME = {
   headings: {
     coupons: { kicker: "Save more", title: "Offers for you", note: "Copy a code to get started", linkLabel: "All coupons", linkHref: "/coupons" },
     aisles: { kicker: "Shop by aisle", title: "Explore our collections", note: "", linkLabel: "View all aisles", linkHref: "/catalog" },
-    deals: { kicker: "Reduced this week", title: "Deals this week", note: "Marked down and use-it-soon", linkLabel: "See all", linkHref: "/deals" },
+    deals: { kicker: "Reduced this week", title: "Deals this week", note: "Marked down and use-it-soon", linkLabel: "See all", linkHref: "/catalog" },
     fresh: { kicker: "Just landed", title: "Fresh in today", note: "Newest on the shelf", linkLabel: "See all", linkHref: "/catalog" },
     steps: { kicker: "How it works", title: "From basket to doorstep, today", note: "", linkLabel: "", linkHref: "" },
     // A blank note here counts the catalogue, using labels.everythingCount.
@@ -285,6 +285,7 @@ export const DEFAULT_HOME = {
     primaryLabel: "Start shopping",
     primaryHref: "/catalog",
     ghostLabel: "Talk to us",
+    // Opens WhatsApp with the shop: see ContactLink.
     ghostHref: "/contact",
   },
 

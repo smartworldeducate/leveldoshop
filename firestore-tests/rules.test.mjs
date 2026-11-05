@@ -127,10 +127,8 @@ const tests = {
         await assertFails(addDoc(orders, newOrder(bad)));
       }
     },
-    "can send a contact message": async () => {
-      await assertSucceeds(addDoc(collection(visitor(), "contactMessages"), { name: "A", email: "a@b.c", message: "hi", createdAt: serverTimestamp() }));
-      await assertFails(addDoc(collection(visitor(), "contactMessages"), { name: "A", email: "a@b.c", message: "x".repeat(5001), createdAt: serverTimestamp() }));
-      await assertFails(addDoc(collection(visitor(), "contactMessages"), { name: "A", extra: 1, createdAt: serverTimestamp() }));
+    "can't send contact messages: the form was removed": async () => {
+      await assertFails(addDoc(collection(visitor(), "contactMessages"), { name: "A", email: "a@b.c", message: "hi", createdAt: serverTimestamp() }));
     },
     "can add exactly one like": async () => {
       const post = doc(visitor(), "posts/post1");
@@ -211,6 +209,16 @@ const tests = {
       for (const bad of [{ price: 1 }, { status: "confirmed" }, { couponCode: "FREE" }, { offerTitle: "Other" }, { offerId: "off" }, { offerId: "nope" }, { buyer: { uid: "bilal" } }, { screenshot: "https://res.cloudinary.com/x/shot.png" }, { hasReceipt: false }]) {
         await assertFails(buy(sana(), "bad", bad));
       }
+    },
+    "a PayPal purchase has no receipt, and one order is one purchase": async () => {
+      const paypal = { hasReceipt: false, paypalOrderId: "5O190127TN364715T", reference: "5O190127TN364715T" };
+      await assertSucceeds(setDoc(doc(sana(), "couponPurchases/5O190127TN364715T"), purchase(paypal)));
+      await assertFails(setDoc(doc(sana(), "couponPurchases/5O190127TN364715T"), purchase(paypal)));
+      await assertFails(setDoc(doc(sana(), "couponPurchases/OTHERID1234567"), purchase(paypal)));
+      await assertFails(setDoc(doc(sana(), "couponPurchases/notanorder"), purchase({ hasReceipt: false, paypalOrderId: "notanorder" })));
+      await assertFails(setDoc(doc(sana(), "couponPurchases/NOORDERFIELD123"), purchase({ hasReceipt: false })));
+      await assertFails(setDoc(doc(sana(), "couponPurchases/CHEAPORDER12345"), purchase({ hasReceipt: false, paypalOrderId: "CHEAPORDER12345", price: 1 })));
+      await assertFails(setDoc(doc(visitor(), "couponPurchases/VISITOR1234567"), purchase({ hasReceipt: false, paypalOrderId: "VISITOR1234567" })));
     },
     "a token has to be a real one, not whatever is typed in the address": async () => {
       for (const token of ["hello", "<script>", "TKN-abc234", "TKN-ABC2345", "TKN-ABC10O", ""]) {

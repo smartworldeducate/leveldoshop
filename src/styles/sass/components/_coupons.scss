@@ -4,36 +4,44 @@
 
 .ticket-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 22px;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 18px;
 
     @include mobile {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 14px;
     }
 }
 
+.ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+// A real coupon: a coloured stub with the discount, torn off from the details.
 .ticket {
     --ticket-from: #{$main-light};
-    --ticket-to: #{$main-dark};
+    --ticket-to: #{$main-color};
     --ticket-ink: #{$main-color};
     --ticket-notch: #{$app-bg};
 
     display: flex;
-    flex-direction: column;
-    border-radius: $radius-lg;
+    border-radius: 20px;
     background: $main-bg;
-    box-shadow: $box-shadow;
+    border: 1px solid rgba($main-color, 0.08);
+    box-shadow: 0 22px 44px -32px rgba($shadow-color, 0.7);
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 
     &:hover {
-        transform: translateY(-4px);
+        transform: translateY(-3px);
+        box-shadow: 0 30px 50px -30px rgba($shadow-color, 0.8);
     }
 
     &--free {
         --ticket-from: #2fb37a;
-        --ticket-to: #0a7347;
+        --ticket-to: #0c8a55;
         --ticket-ink: #0c8a55;
     }
 
@@ -45,71 +53,61 @@
         }
     }
 
-    &__top {
-        position: relative;
-        padding: 20px 22px 24px;
-        background: linear-gradient(145deg, var(--ticket-from), var(--ticket-to));
+    &__stub {
+        display: flex;
+        flex: 0 0 128px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 18px 10px;
+        background: linear-gradient(160deg, var(--ticket-from), var(--ticket-to));
         color: $txt-white;
-        overflow: hidden;
+        text-align: center;
 
-        // A soft circle for depth, so the colour isn't one flat block.
-        &::after {
-            content: "";
-            position: absolute;
-            top: -46px;
-            right: -34px;
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: rgba(#fff, 0.1);
+        @include mobile {
+            flex-basis: 96px;
+            padding: 16px 6px;
         }
 
-        h3 {
-            margin-top: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            line-height: 1.3;
+        strong {
+            margin-top: 10px;
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1;
             overflow-wrap: anywhere;
+
+            @include mobile {
+                font-size: 25px;
+            }
         }
     }
 
     &__tag {
-        display: inline-block;
-        padding: 4px 11px;
+        padding: 3px 10px;
         border-radius: $radius-pill;
         background: rgba(#fff, 0.2);
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.03em;
     }
 
-    &__amount {
-        margin-top: 12px;
-        line-height: 1;
-
-        strong {
-            font-size: 44px;
-            font-weight: 800;
-            letter-spacing: -0.01em;
-        }
-
-        span {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-        }
+    &__off {
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
     }
 
     &__tear {
         position: relative;
-        height: 0;
-        border-top: 2px dashed rgba($main-color, 0.22);
+        flex-shrink: 0;
+        width: 0;
+        border-left: 2px dashed rgba($main-color, 0.2);
 
         &::before,
         &::after {
             content: "";
             position: absolute;
-            top: -11px;
+            left: -11px;
             width: 20px;
             height: 20px;
             border-radius: 50%;
@@ -117,11 +115,11 @@
         }
 
         &::before {
-            left: -10px;
+            top: -11px;
         }
 
         &::after {
-            right: -10px;
+            bottom: -11px;
         }
     }
 
@@ -129,9 +127,24 @@
         display: flex;
         flex: 1;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
-        padding: 18px 22px 22px;
+        padding: 18px 22px;
+
+        @include mobile {
+            padding: 15px 14px;
+        }
+
+        h3 {
+            font-family: $font-display;
+            // This font's default numbers dip below the line: "20%" looked like "2o%".
+            font-variant-numeric: lining-nums;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: $txt-main-color;
+            overflow-wrap: anywhere;
+        }
 
         > p {
             font-size: 14px;
@@ -141,7 +154,7 @@
     }
 
     &__body > &__gives {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         color: var(--ticket-ink);
     }
@@ -149,14 +162,25 @@
     &__terms {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 2px 14px;
 
         li {
-            padding: 4px 10px;
-            border-radius: $radius-pill;
-            background: #f2f6fc;
-            font-size: 12px;
+            position: relative;
+            padding-left: 12px;
+            font-size: 12.5px;
             color: $txt-second-color;
+
+            &::before {
+                content: "";
+                position: absolute;
+                top: 7px;
+                left: 0;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: var(--ticket-ink);
+                opacity: 0.55;
+            }
         }
     }
 
@@ -176,8 +200,8 @@
     }
 
     &__body > &__reward {
-        padding: 10px 12px;
-        border-radius: 12px;
+        padding: 8px 11px;
+        border-radius: 10px;
         background: #fef8e7;
         color: #8a5700;
     }
@@ -188,25 +212,24 @@
 
     &__foot {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px 14px;
         margin-top: auto;
-        padding-top: 6px;
+        padding-top: 10px;
+        border-top: 1px solid $app-bg;
     }
 
     &__price {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
-
         small {
-            font-size: 13px;
+            display: block;
+            font-size: 12px;
             color: $txt-second-color;
         }
 
         strong {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
             line-height: 1.1;
             color: $txt-main-color;
@@ -224,13 +247,13 @@
 
     // The code on the left, what pressing it does on the right.
     .offer-copy {
-        display: flex;
+        display: inline-flex;
+        flex-wrap: wrap;
         align-items: stretch;
-        justify-content: space-between;
-        width: 100%;
+        max-width: 100%;
         padding: 0;
         border: 1.5px dashed var(--ticket-ink);
-        border-radius: 14px;
+        border-radius: 12px;
         background: transparent;
         overflow: hidden;
         cursor: pointer;
@@ -244,10 +267,10 @@
         }
 
         span {
-            flex: 1;
+            flex: 1 1 auto;
             align-self: center;
-            padding: 0 8px;
-            font-size: 14px;
+            padding: 9px 12px;
+            font-size: 13.5px;
             color: var(--ticket-ink);
             text-align: center;
             white-space: nowrap;
@@ -255,248 +278,333 @@
 
         small {
             display: flex;
-            flex-shrink: 0;
+            flex: 1 1 auto;
             align-items: center;
-            gap: 7px;
-            padding: 12px 14px;
-            background: linear-gradient(145deg, var(--ticket-from), var(--ticket-to));
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 13px;
+            background: var(--ticket-ink);
             font-size: 13px;
             font-weight: 700;
             color: $txt-white;
+            white-space: nowrap;
         }
-    }
-}
-
-// Few tickets: use the width, rather than one card and an empty page.
-.ticket-grid--pair {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    @include tablet {
-        grid-template-columns: 1fr;
-    }
-}
-
-.ticket-grid--solo {
-    grid-template-columns: 1fr;
-
-    .ticket {
-        flex-direction: row;
-
-        @include tablet {
-            flex-direction: column;
-        }
-    }
-
-    .ticket__top {
-        display: flex;
-        flex: 0 0 38%;
-        flex-direction: column;
-        justify-content: center;
-        align-items: flex-start;
-        padding: 30px 34px;
-
-        @include tablet {
-            padding: 20px 22px 24px;
-        }
-    }
-
-    .ticket__amount strong {
-        font-size: 60px;
-
-        @include tablet {
-            font-size: 44px;
-        }
-    }
-
-    .ticket__top h3 {
-        font-size: 19px;
-    }
-
-    .ticket__tear {
-        height: auto;
-        border-top: 0;
-        border-left: 2px dashed rgba($main-color, 0.22);
-
-        &::before,
-        &::after {
-            left: -11px;
-            right: auto;
-        }
-
-        &::before {
-            top: -10px;
-        }
-
-        &::after {
-            top: auto;
-            bottom: -10px;
-        }
-
-        @include tablet {
-            height: 0;
-            border-top: 2px dashed rgba($main-color, 0.22);
-            border-left: 0;
-
-            &::before,
-            &::after {
-                top: -11px;
-                bottom: auto;
-            }
-
-            &::before {
-                left: -10px;
-            }
-
-            &::after {
-                left: auto;
-                right: -10px;
-            }
-        }
-    }
-
-    .ticket__body {
-        justify-content: center;
-        padding: 26px 32px;
-
-        @include tablet {
-            padding: 18px 22px 22px;
-        }
-    }
-
-    .offer-copy {
-        max-width: 420px;
     }
 }
 
 // The dashboard's canvas is a different colour, so the notches match it.
 .ticket-preview .ticket {
     --ticket-notch: #fff;
-    box-shadow: 0 0 0 1px rgba($main-color, 0.1);
+
+    .ticket__stub {
+        flex-basis: 92px;
+    }
+
+    .ticket__stub strong {
+        font-size: 24px;
+    }
+
+    .ticket__body {
+        padding: 14px;
+    }
 }
 
-// ---------- coupon page ----------
+// ---------- coupon and reward pages ----------
 
-.coupon-hero {
-    position: relative;
-    padding: 38px 40px;
-    border-radius: $radius-lg;
-    background: linear-gradient(135deg, $main-light, $main-dark);
-    color: $txt-white;
-    overflow: hidden;
+.offers-page {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    margin-bottom: 44px;
 
     @include mobile {
+        gap: 28px;
+    }
+}
+
+.page-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 30px;
+    overflow: hidden;
+    padding: 44px 52px;
+    border-radius: $radius-lg;
+    border: 1px solid rgba($main-color, 0.1);
+    background:
+        radial-gradient(620px 380px at 88% 0%, rgba($main-light, 0.32), transparent 62%),
+        radial-gradient(460px 340px at -4% 100%, rgba(#f5b94e, 0.16), transparent 60%),
+        linear-gradient(140deg, #f8fbff 0%, #eaf0fb 100%);
+
+    @include tablet {
+        grid-template-columns: 1fr;
+        padding: 32px 28px;
+    }
+
+    @include mobile {
+        gap: 20px;
         padding: 26px 20px;
     }
 
-    &::after {
-        content: "";
-        position: absolute;
-        top: -90px;
-        right: -50px;
-        width: 300px;
-        height: 300px;
-        border-radius: 50%;
-        background: rgba(#fff, 0.08);
+    &__kicker {
+        color: $main-color;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
     }
 
-    &__head {
-        position: relative;
-        z-index: 1;
+    h1 {
+        margin-top: 8px;
+        font-family: $font-display;
+        font-variant-numeric: lining-nums;
+        font-size: 40px;
+        font-weight: 700;
+        line-height: 1.12;
+        letter-spacing: -0.01em;
+        color: $txt-main-color;
+
+        @include mobile {
+            font-size: 29px;
+        }
+    }
+
+    &__copy > p {
+        margin-top: 10px;
+        max-width: 500px;
+        font-size: 15.5px;
+        line-height: 1.55;
+        color: $txt-second-color;
+    }
+
+    &__actions {
+        margin-top: 18px;
+    }
+
+    &__side {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
+        justify-content: center;
+    }
+
+    // Nothing beside the words: a shorter band, with the button at the far end.
+    &--compact {
+        position: relative;
+        padding-block: 30px;
 
         h1 {
-            font-family: $font-display;
             font-size: 34px;
-            font-weight: 700;
-            line-height: 1.15;
         }
+    }
 
-        p {
-            margin-top: 6px;
-            max-width: 560px;
-            font-size: 15px;
-            line-height: 1.5;
-            opacity: 0.9;
+    &--compact &__actions {
+        position: absolute;
+        top: 50%;
+        right: 52px;
+        margin-top: 0;
+        transform: translateY(-50%);
+
+        @include mobile {
+            position: static;
+            margin-top: 14px;
+            transform: none;
         }
+    }
+
+    &__ways {
+        display: grid;
+        width: 100%;
+        gap: 10px;
     }
 }
 
-.how-buy {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 26px;
+// The best offer, drawn large in the header.
+.hero-ticket {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px;
+    padding: 22px 18px 20px;
+    border-radius: 22px;
+    background: linear-gradient(160deg, $main-light, $main-color);
+    color: $txt-white;
+    box-shadow: 0 30px 50px -26px rgba($shadow-color, 0.9);
+    transform: rotate(-4deg);
 
     @include tablet {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: none;
     }
 
-    li {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-        border-radius: 16px;
-        background: rgba(#fff, 0.14);
-
-        @include mobile {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-        }
+    span {
+        padding: 3px 11px;
+        border-radius: $radius-pill;
+        background: rgba(#fff, 0.2);
+        font-size: 12px;
+        font-weight: 700;
     }
 
-    li > span {
+    strong {
+        margin-top: 10px;
+        font-size: 56px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    small {
+        margin-top: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+    }
+}
+
+.way-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(#fff, 0.85);
+    border: 1px solid rgba($main-color, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:is(a):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 30px -24px rgba($shadow-color, 0.9);
+    }
+
+    > span {
         display: flex;
         flex-shrink: 0;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: $main-bg;
-        color: $main-dark;
-        font-size: 14px;
-        font-weight: 800;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: #fdeecb;
+        color: #9a6200;
+    }
+
+    strong {
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        color: $txt-main-color;
+    }
+
+    small {
+        display: block;
+        margin-top: 1px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: $txt-second-color;
+    }
+}
+
+// Tickets beside a short "how it works", so one ticket doesn't leave a bare page.
+.offers-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+    gap: 24px;
+
+    @include tablet {
+        grid-template-columns: 1fr;
+    }
+
+    &__main {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 32px;
+    }
+}
+
+.steps-card {
+    padding: 22px 24px;
+    border-radius: 20px;
+    background: $main-bg;
+    border: 1px solid rgba($main-color, 0.08);
+
+    h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: $txt-main-color;
+    }
+
+    ol {
+        margin-top: 14px;
+        counter-reset: step;
+    }
+
+    li {
+        position: relative;
+        padding: 0 0 16px 38px;
+        counter-increment: step;
+
+        &:last-child {
+            padding-bottom: 0;
+        }
+
+        &::before {
+            content: counter(step);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: $main-soft;
+            color: $main-dark;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        // The line joining each number to the next.
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 26px;
+            bottom: 0;
+            left: 12px;
+            width: 2px;
+            background: $main-soft;
+        }
     }
 
     strong {
         display: block;
         font-size: 14px;
         font-weight: 700;
+        color: $txt-main-color;
     }
 
     small {
         display: block;
         margin-top: 1px;
-        font-size: 12px;
-        line-height: 1.35;
-        opacity: 0.88;
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: $txt-second-color;
     }
-}
 
-.coupon-group {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    &__note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid $app-bg;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: $txt-second-color;
 
-    > header {
-        h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: $txt-main-color;
-        }
-
-        p {
-            margin-top: 2px;
-            font-size: 14px;
-            color: $txt-second-color;
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+            color: #0c8a55;
         }
     }
 }
@@ -507,7 +615,7 @@
     align-items: center;
     gap: 14px;
     padding: 18px 22px;
-    border-radius: $radius-lg;
+    border-radius: 20px;
     background: #fef8e7;
     color: $txt-main-color;
 
@@ -677,23 +785,142 @@
 
 // ---------- my coupons ----------
 
-.coupon-code__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.my-coupons-tabs {
+    margin-bottom: 16px;
 }
 
-.coupon-code .coupon-code__use {
-    background: linear-gradient(150deg, $main-light, $main-color);
-    color: $txt-white;
+// A ticket the customer owns: the stub says where it stands.
+.ticket--mine {
+    &.is-checking {
+        --ticket-from: #f5c566;
+        --ticket-to: #d98a1f;
+        --ticket-ink: #a86a00;
+    }
+
+    &.is-past {
+        --ticket-from: #b6bfd0;
+        --ticket-to: #8a94a8;
+        --ticket-ink: #6b7588;
+    }
+
+    &:hover {
+        transform: none;
+    }
+
+    .ticket__stub svg {
+        margin-top: 10px;
+    }
+
+    .buy-steps {
+        margin-top: 2px;
+    }
+
+    .reward-note {
+        margin-top: 0;
+    }
+
+    .my-coupon__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 6px 12px;
+    }
+
+    .my-coupon__status {
+        padding: 4px 11px;
+        border-radius: $radius-pill;
+        background: color-mix(in srgb, var(--ticket-ink) 12%, #fff);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ticket-ink);
+        white-space: nowrap;
+    }
+
+    .my-coupon__meta {
+        font-size: 12.5px;
+        color: $txt-second-color;
+    }
+}
+
+// The code is what they came for, so it's the biggest thing on the card.
+.my-coupon__code {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px dashed var(--ticket-ink);
+    border-radius: 14px;
+
+    > div {
+        min-width: 0;
+    }
+
+    small {
+        display: block;
+        font-size: 12px;
+        color: $txt-second-color;
+    }
+
+    strong {
+        font-family: monospace;
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: var(--ticket-ink);
+        overflow-wrap: anywhere;
+    }
+
+    &.is-used strong {
+        text-decoration: line-through;
+    }
+
+    nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 38px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 10px;
+        background: $main-soft;
+        font-size: 13px;
+        font-weight: 700;
+        color: $main-dark;
+        cursor: pointer;
+    }
+
+    .my-coupon__use {
+        background: var(--ticket-ink);
+        color: $txt-white;
+    }
 }
 
 .my-coupon__links {
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
-    margin-top: 12px;
     font-size: 13px;
+
+    a {
+        font-weight: 700;
+        color: $main-color;
+        text-decoration: underline;
+    }
+}
+
+.rewards-signin {
+    margin-top: -14px;
+    font-size: 14px;
+    color: $txt-second-color;
 
     a {
         font-weight: 700;
@@ -908,145 +1135,6 @@
 
 // ---------- rewards page ----------
 
-.rewards {
-    display: flex;
-    flex-direction: column;
-    gap: 34px;
-    margin-bottom: 40px;
-
-    &__head {
-        margin-bottom: 14px;
-
-        h2 {
-            font-size: 22px;
-            font-weight: 700;
-            color: $txt-main-color;
-        }
-
-        p {
-            margin-top: 3px;
-            font-size: 14px;
-            line-height: 1.45;
-            color: $txt-second-color;
-        }
-    }
-}
-
-.rewards-hero {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 32px;
-    padding: 44px;
-    border-radius: $radius-lg;
-    background: linear-gradient(135deg, #5b83d6 0%, #35528f 62%, #2a4276 100%);
-    color: $txt-white;
-    overflow: hidden;
-
-    @include tablet {
-        grid-template-columns: 1fr;
-    }
-
-    @include mobile {
-        gap: 22px;
-        padding: 28px 20px;
-    }
-
-    &::before {
-        content: "";
-        position: absolute;
-        top: -110px;
-        right: -70px;
-        width: 320px;
-        height: 320px;
-        border-radius: 50%;
-        background: rgba(#fff, 0.07);
-    }
-
-    > * {
-        position: relative;
-    }
-
-    &__eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 5px 12px;
-        border-radius: $radius-pill;
-        background: rgba(#fff, 0.16);
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    h1 {
-        margin-top: 14px;
-        font-family: $font-display;
-        font-size: 40px;
-        font-weight: 700;
-        line-height: 1.12;
-
-        @include mobile {
-            font-size: 30px;
-        }
-    }
-
-    &__copy > p {
-        margin-top: 10px;
-        max-width: 480px;
-        font-size: 16px;
-        line-height: 1.5;
-        opacity: 0.92;
-    }
-
-    &__ways {
-        display: grid;
-        gap: 12px;
-    }
-
-    &__way {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 16px 18px;
-        border-radius: 18px;
-        background: rgba(#fff, 0.13);
-        color: $txt-white;
-        transition: background 0.15s ease, transform 0.15s ease;
-
-        &:is(a):hover {
-            background: rgba(#fff, 0.2);
-            transform: translateY(-2px);
-        }
-
-        > span {
-            display: flex;
-            flex-shrink: 0;
-            align-items: center;
-            justify-content: center;
-            width: 42px;
-            height: 42px;
-            border-radius: 14px;
-            background: #ffd27a;
-            color: #6b4300;
-        }
-
-        strong {
-            display: block;
-            font-size: 15px;
-            font-weight: 700;
-        }
-
-        small {
-            display: block;
-            margin-top: 2px;
-            font-size: 13px;
-            line-height: 1.4;
-            opacity: 0.9;
-        }
-    }
-}
-
 // A date you can read at a glance, like a page torn off a calendar.
 .reward-date {
     display: flex;
@@ -1080,7 +1168,7 @@
 
 .my-rewards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
 
     @include mobile {
@@ -1129,10 +1217,11 @@
 
 .draw {
     display: grid;
-    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
-    border-radius: $radius-lg;
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+    border-radius: 20px;
     background: $main-bg;
-    box-shadow: $box-shadow;
+    border: 1px solid rgba($main-color, 0.08);
+    box-shadow: 0 22px 44px -32px rgba($shadow-color, 0.7);
     overflow: hidden;
 
     & + & {
@@ -1150,8 +1239,8 @@
         justify-content: center;
         gap: 8px;
         padding: 32px 30px;
-        background: linear-gradient(150deg, #f5b94e, #d98a1f);
-        color: #3d2600;
+        background: linear-gradient(150deg, #fbe3b4, #f5c566);
+        color: #4a2f00;
         overflow: hidden;
 
         &::after {
@@ -1162,7 +1251,7 @@
             width: 170px;
             height: 170px;
             border-radius: 50%;
-            background: rgba(#fff, 0.2);
+            background: rgba(#fff, 0.28);
         }
 
         // Above the circle, which would otherwise wash out the words.
@@ -1179,8 +1268,10 @@
         }
 
         strong {
+            font-family: $font-display;
+            font-variant-numeric: lining-nums;
             font-size: 28px;
-            font-weight: 800;
+            font-weight: 700;
             line-height: 1.18;
             overflow-wrap: anywhere;
         }
@@ -1264,6 +1355,34 @@
 
         svg {
             flex-shrink: 0;
+        }
+    }
+
+    &__winner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 15px 18px;
+        border-radius: 14px;
+        background: linear-gradient(150deg, #fdf0d2, #fbe3b4);
+        color: #4a2f00;
+
+        svg {
+            flex-shrink: 0;
+        }
+
+        small {
+            display: block;
+            font-size: 13px;
+        }
+
+        strong {
+            display: block;
+            font-family: $font-display;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
         }
     }
 
@@ -1384,25 +1503,21 @@
 // ---------- questions ----------
 
 .help-list {
-    h2 {
-        margin-bottom: 14px;
-        font-size: 20px;
-        font-weight: 700;
-        color: $txt-main-color;
-    }
+    > div:last-child {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 12px;
 
-    > div {
-        border-radius: $radius-lg;
-        background: $main-bg;
-        box-shadow: $box-shadow;
+        @include tablet {
+            grid-template-columns: 1fr;
+        }
     }
 
     details {
-        border-bottom: 1px solid $app-bg;
-
-        &:last-child {
-            border-bottom: 0;
-        }
+        border-radius: 16px;
+        background: $main-bg;
+        border: 1px solid rgba($main-color, 0.08);
     }
 
     summary {
@@ -1410,8 +1525,8 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 16px 22px;
-        font-size: 15px;
+        padding: 14px 18px;
+        font-size: 14.5px;
         font-weight: 600;
         color: $txt-main-color;
         cursor: pointer;
@@ -1433,8 +1548,8 @@
     }
 
     p {
-        padding: 0 22px 16px;
-        font-size: 14px;
+        padding: 0 18px 15px;
+        font-size: 13.5px;
         line-height: 1.55;
         color: $txt-second-color;
     }
@@ -1488,5 +1603,68 @@
     img {
         max-height: 420px;
         border-radius: 12px;
+    }
+}
+
+// Section heads are sized for shelves of products; these pages explain more.
+.offers-page .section-head {
+    &__title {
+        @include mobile {
+            font-size: 23px;
+        }
+    }
+
+    &__note {
+        font-size: 14px;
+        line-height: 1.45;
+    }
+}
+
+.offers-page .section-head__title {
+    font-variant-numeric: lining-nums;
+}
+
+// ---------- paying from which country ----------
+
+.pay-country {
+    max-width: 360px;
+    margin-bottom: 14px;
+
+    select {
+        width: 100%;
+        height: 46px;
+        padding: 0 12px;
+        border: 1px solid $main-soft;
+        border-radius: 12px;
+        background: $main-bg;
+        font-size: 14px;
+        color: $txt-main-color;
+    }
+}
+
+.pay-country__only {
+    margin-bottom: 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $txt-second-color;
+}
+
+.pay-methods + .checkout-pin,
+.pay-note + .pay-methods {
+    margin-top: 10px;
+}
+
+.paypal-box {
+    min-height: 60px;
+    margin-bottom: 8px;
+
+    p {
+        font-size: 13px;
+        color: $txt-second-color;
+    }
+
+    .checkout-pin {
+        display: block;
+        margin-top: 8px;
     }
 }

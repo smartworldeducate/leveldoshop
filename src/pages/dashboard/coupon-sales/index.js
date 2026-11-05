@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
-import { AlertTriangle, CheckCircle2, Clock, Copy, Download, ExternalLink, Eye, FileCheck2, Gift, MessageCircle, Pencil, Plus, ShoppingBag, Trash2, Wallet } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Copy, CreditCard, Download, ExternalLink, Eye, FileCheck2, Gift, MessageCircle, Pencil, Plus, ShoppingBag, Trash2, Wallet } from "lucide-react";
 
 import DashboardLayout, { dashboardGetLayout } from "@/components/dashboard/DashboardLayout";
 import Card, { CardHeader } from "@/components/dashboard/ui/Card";
@@ -101,7 +101,11 @@ function Purchases() {
       key: "receipt",
       label: "Receipt",
       render: (p) =>
-        p.hasReceipt || p.screenshot ? (
+        p.paypalOrderId ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            <CreditCard className="h-4 w-4 text-[#4267B2]" /> Paid by PayPal
+          </span>
+        ) : p.hasReceipt || p.screenshot ? (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
             <FileCheck2 className="h-4 w-4 text-emerald-600" /> Attached
           </span>

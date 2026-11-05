@@ -12,6 +12,9 @@ const nextConfig = {
       { source: '/admin/orders', destination: '/dashboard/orders', permanent: false },
       { source: '/admin/posts', destination: '/dashboard/posts', permanent: false },
       { source: '/admin/:path*', destination: '/dashboard', permanent: false },
+      // Removed pages. Old links and saved bookmarks still land somewhere useful.
+      { source: '/deals', destination: '/catalog', permanent: false },
+      { source: '/contact', destination: '/', permanent: false },
     ];
   },
 };

@@ -13,6 +13,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
   writeBatch,
@@ -99,6 +100,37 @@ export const requestPurchase = createAsyncThunk(
       await batch.commit();
       return ref.id;
     } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/**
+ * Saved under the PayPal order ID before any money moves, so one order is only
+ * ever one purchase. Paying again after a declined card finds it already there.
+ */
+export const requestPaypalPurchase = createAsyncThunk(
+  "couponSales/requestPaypalPurchase",
+  async ({ offer, orderId, buyer, token, paymentMethod }, { rejectWithValue }) => {
+    const ref = doc(db, "couponPurchases", orderId);
+    try {
+      await setDoc(ref, {
+        offerId: offer.id,
+        offerTitle: offer.title,
+        price: offer.price,
+        buyer,
+        reference: orderId,
+        token,
+        paymentMethod,
+        hasReceipt: false,
+        paypalOrderId: orderId,
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
+      return orderId;
+    } catch (err) {
+      const existing = await getDoc(ref).catch(() => null);
+      if (existing?.exists()) return orderId;
       return rejectWithValue(err.message);
     }
   }

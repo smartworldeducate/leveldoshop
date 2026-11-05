@@ -126,7 +126,8 @@ export default function Catalog() {
     else if (sort === 'price-desc') list = [...list].sort((a, b) => (b.price || 0) - (a.price || 0))
     else if (sort === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
 
-    return list
+    // Whatever the order, what can be bought comes first.
+    return [...list].sort((a, b) => Number(isSellable(b)) - Number(isSellable(a)))
   }, [allProducts, filter, searchText, sort, hiddenSlugs, categories])
 
   const activeCount =

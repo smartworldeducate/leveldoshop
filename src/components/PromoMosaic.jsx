@@ -60,7 +60,7 @@ export default function PromoMosaic() {
       (config.tiles || []).find((t) => t.variant === variant && (t.title || '').trim()) ||
       DEFAULT_HOME.mosaic.tiles.find((t) => t.variant === variant)
 
-    const dealsHref = pages?.deals === false ? '/catalog' : '/deals'
+    const dealsHref = '/catalog'
     const aisles = visibleCategories(categories)
 
     const deals = sellable

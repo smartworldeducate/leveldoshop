@@ -43,9 +43,10 @@ export default function Product() {
     const pool = products.filter(
       p => p.slug !== product.slug && !hidden.includes(p.categorySlug)
     )
-    const byStock = (a, b) => Number(isSellable(b)) - Number(isSellable(a))
-    const same = pool.filter(p => p.categorySlug === product.categorySlug).sort(byStock)
-    const others = pool.filter(p => p.categorySlug !== product.categorySlug && isSellable(p))
+    // Only what can be bought: "you might also like" shouldn't offer sold-out items.
+    const buyable = pool.filter(isSellable)
+    const same = buyable.filter(p => p.categorySlug === product.categorySlug)
+    const others = buyable.filter(p => p.categorySlug !== product.categorySlug)
     const list = [...same, ...others].slice(0, RELATED_COUNT)
     return { related: list, sameAisleOnly: same.length >= list.length }
   }, [product, products, categories])

@@ -50,6 +50,9 @@ const ProductView = ({ product, isModal = false }) => {
   const dispatch = useDispatch()
   const router = useRouter()
   const categories = useSelector((state) => state.categories.items)
+  const inBasket = useSelector((state) =>
+    state.cartItems.value.filter((item) => item.slug === product.slug).reduce((sum, item) => sum + item.quantity, 0)
+  )
   const { home, contact } = useSelector((state) => state.settings.values)
 
   const images = (product.images || []).filter(Boolean)
@@ -112,7 +115,7 @@ const ProductView = ({ product, isModal = false }) => {
     perUnit && { label: 'Unit price', value: perUnit },
     storage && { label: 'Storage', value: storage.label },
     product.expiry && { label: 'Best before', value: prettyDate(product.expiry) },
-    { label: 'Organic', value: product.organic ? 'Yes' : 'No' },
+    product.organic && { label: 'Organic', value: 'Yes' },
   ].filter(Boolean)
 
   const hasDescription = String(product.description || '').replace(/<[^>]*>/g, '').trim().length > 0
@@ -138,7 +141,7 @@ const ProductView = ({ product, isModal = false }) => {
       <div className="pdp__main">
         {/* ---------- gallery ---------- */}
         <div className="pdp__gallery">
-          <div className="pdp__stage" style={{ '--aisle-accent': accent }}>
+          <div className={`pdp__stage ${images.length ? '' : 'no-photo'}`} style={{ '--aisle-accent': accent }}>
             {images.length ? (
               <Image
                 key={images[active]}
@@ -151,8 +154,9 @@ const ProductView = ({ product, isModal = false }) => {
             ) : (
               // No photo yet: the aisle's glyph on its own colour reads as
               // "picture to follow", not as a broken image.
-              <span className="pdp__glyph" aria-hidden="true">
-                <i className={aisleIcon(product.categorySlug)}></i>
+              <span className="pdp__glyph">
+                <i className={aisleIcon(product.categorySlug)} aria-hidden="true"></i>
+                <small>Photo coming soon</small>
               </span>
             )}
 
@@ -285,6 +289,14 @@ const ProductView = ({ product, isModal = false }) => {
             >
               Browse {aisle || 'the shop'} instead
             </Link>
+          )}
+
+          {inBasket > 0 && (
+            <p className="pdp__inbasket">
+              <i className="bx bx-check-circle" aria-hidden="true"></i>
+              {inBasket} in your basket
+              <Link href="/cart" onClick={() => dispatch(remove())}>View basket</Link>
+            </p>
           )}
 
           {promises.length > 0 && (

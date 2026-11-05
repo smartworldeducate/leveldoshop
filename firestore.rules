@@ -150,7 +150,7 @@ service cloud.firestore {
       let offer = get(/databases/$(database)/documents/couponOffers/$(data.offerId)).data;
       return signedIn()
         && data.keys().hasOnly(['offerId', 'offerTitle', 'price', 'buyer', 'reference', 'token',
-                                'paymentMethod', 'hasReceipt', 'status', 'createdAt'])
+                                'paymentMethod', 'hasReceipt', 'paypalOrderId', 'status', 'createdAt'])
         && data.buyer.uid == request.auth.uid
         && data.status == 'pending'
         && offer.enabled == true
@@ -160,8 +160,14 @@ service cloud.firestore {
         && data.reference.size() <= 200
         && data.token.matches('^TKN-[A-Z2-9]{6}$')
         && data.paymentMethod is string
-        && data.hasReceipt == true
-        && existsAfter(/databases/$(database)/documents/couponReceipts/$(id))
+        && ((data.hasReceipt == true
+              && !('paypalOrderId' in data)
+              && existsAfter(/databases/$(database)/documents/couponReceipts/$(id)))
+            // Paid by PayPal: no receipt, and one purchase per order. Staff see
+            // PayPal's own answer, so a made-up order ID proves nothing.
+            || (data.hasReceipt == false
+              && data.paypalOrderId == id
+              && id.matches('^[A-Z0-9]{10,25}$')))
         && data.createdAt == request.time;
     }
 
@@ -207,14 +213,9 @@ service cloud.firestore {
         && request.time <= timestamp.value(get(/databases/$(database)/documents/rewardDraws/$(request.resource.data.drawId)).data.closesAt);
     }
 
+    // The contact form was removed. Messages already sent stay readable by staff.
     match /contactMessages/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt'])
-        && request.resource.data.name is string
-        && request.resource.data.email is string
-        && request.resource.data.message is string
-        && request.resource.data.message.size() <= 5000
-        && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if isStaff();
+      allow read, delete: if isStaff();
     }
 
     match /dashboardUsers/{userEmail} {

@@ -37,7 +37,7 @@ export default function MarketHero() {
   const [countdown, setCountdown] = useState(null)
   const stage = useRef(null)
 
-  const { tagline, contact, pages, home } = useSelector((state) => state.settings.values)
+  const { tagline, contact, home } = useSelector((state) => state.settings.values)
   const products = useSelector((state) => state.products.items)
   const categories = useSelector((state) => state.categories.items)
 
@@ -69,7 +69,7 @@ export default function MarketHero() {
 
   const slides = useMemo(() => {
     const aisles = visibleCategories(categories)
-    const dealsHref = pages?.deals === false ? '/catalog' : '/deals'
+    const dealsHref = '/catalog'
     const produce = aisles.find((c) => c.slug === 'fruits-vegetables') || aisles[0]
 
     // Biggest genuine markdown on the shelf right now.
@@ -131,7 +131,7 @@ export default function MarketHero() {
     }
 
     return list.map((slide, i) => ({ ...slide, art: pickArt(sellable, i) }))
-  }, [sellable, categories, heroContent, tagline, cutoff, pages])
+  }, [sellable, categories, heroContent, tagline, cutoff])
 
   // A slide count that shrinks (the last deal sells out) must not strand the
   // index on a slide that no longer exists.
@@ -215,11 +215,6 @@ export default function MarketHero() {
             <i className="bx bx-right-arrow-alt"></i>
           </Link>
 
-          {pages?.deals !== false && slides[0]?.id === 'auto-deal' && slide.id !== 'auto-deal' && (
-            <Link href="/deals" className="hero__ghost">
-              {orDefault(heroContent.dealsLinkLabel, DEFAULT_HOME.hero.dealsLinkLabel)}
-            </Link>
-          )}
         </div>
 
         {slides.length > 1 && (

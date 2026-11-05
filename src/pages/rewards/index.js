@@ -4,16 +4,26 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
-import { CalendarClock, CheckCircle2, Gift, Sparkles, Trophy } from 'lucide-react'
+import { CalendarClock, CheckCircle2, Gift, Trophy } from 'lucide-react'
 
-import { OfferTicket, ticketGridClass } from '../../components/CouponTicket'
+import { OfferTicket } from '../../components/CouponTicket'
 import HelpList from '../../components/HelpList'
+import PageHero from '../../components/PageHero'
+import SectionHead from '../../components/SectionHead'
+import StepsCard from '../../components/StepsCard'
+import ContactLink from '../../components/ContactLink'
 import { useAuth } from '../../context/AuthContext'
 import { enterDraw, fetchDraws, fetchMyEntry } from '../../redux/rewards/rewardsSlice'
 import { fetchMyPurchases, fetchOffers } from '../../redux/couponSales/couponSalesSlice'
 import { whatsappNumber } from '../../data/notifications'
-import { drawStatus, formatDrawDate, timeLeft } from '../../data/rewards'
+import { drawStatus, entryId, formatDrawDate, timeLeft } from '../../data/rewards'
 import { dayCountdown, formatRewardDay, offersOnSale, rewardList } from '../../data/couponSales'
+
+const REWARD_DAY_STEPS = [
+  { title: 'Buy a gift coupon', note: 'Pay and upload your receipt.' },
+  { title: 'We confirm your payment', note: "You're then on the reward-day list." },
+  { title: 'Get your gift', note: 'Every buyer gets it on the reward day.' },
+]
 
 /** Ticks while it's on screen, and says when it reaches zero so the draw can close. */
 function Countdown({ until, onEnd }) {
@@ -59,6 +69,7 @@ function DrawCard({ draw }) {
   const { user, loading: authLoading } = useAuth()
   const entered = useSelector((s) => s.rewards.entered[draw.id])
   const status = drawStatus(draw).key
+  const iWon = Boolean(user && draw.winner?.entryId === entryId(draw.id, user.uid))
 
   const [, closeNow] = useState(0)
   const [entering, setEntering] = useState(false)
@@ -100,7 +111,7 @@ function DrawCard({ draw }) {
     <article className="draw">
       <div className="draw__prize">
         <Gift size={38} />
-        <small>You could win</small>
+        <small>{status === 'open' ? 'You could win' : 'The prize'}</small>
         <strong>{draw.prize}</strong>
         <span className="draw__tag">Free to enter</span>
       </div>
@@ -120,8 +131,26 @@ function DrawCard({ draw }) {
           <span><Trophy size={15} /> Winner announced <strong>{formatDrawDate(draw.resultsAt)}</strong></span>
         </div>
 
+        {status === 'closed' && (
+          <div>
+            <p className="draw__label">Entries have closed. Winner announced in</p>
+            <Countdown until={draw.resultsAt} onEnd={() => closeNow((n) => n + 1)} />
+          </div>
+        )}
         {status === 'due' && <p className="draw__wait">Entries have closed. The winner will be announced here shortly.</p>}
-        {status === 'closed' && <p className="draw__wait">Entries have closed. Come back on the results date to see who was selected.</p>}
+        {status === 'results' && (
+          <p className="draw__winner">
+            <Trophy size={22} />
+            <span>
+              <small>{iWon ? 'Congratulations, you won!' : 'The winner is'}</small>
+              <strong>{draw.winner.name}</strong>
+              {iWon && <small>We'll contact you on WhatsApp to arrange your prize.</small>}
+            </span>
+          </p>
+        )}
+        {status !== 'open' && entered && !iWon && (
+          <p className="draw__entered"><CheckCircle2 size={18} /> You entered this draw.</p>
+        )}
 
         {status === 'open' && !authLoading && (
           entered ? (
@@ -149,7 +178,9 @@ function DrawCard({ draw }) {
           )
         )}
 
-        <p className="draw__free">No purchase needed. One entry per person. Buying anything doesn't improve your chances.</p>
+        {status === 'open' && (
+          <p className="draw__free">No purchase needed. One entry per person. Buying anything doesn't improve your chances.</p>
+        )}
         {draw.terms && (
           <details className="draw__rules">
             <summary>Rules</summary>
@@ -181,7 +212,7 @@ function MyReward({ purchase }) {
         ) : when ? (
           <small className="is-soon">{formatRewardDay(day)} ({when})</small>
         ) : (
-          <small className="is-soon">The day has passed. <Link href="/contact">Contact us</Link> if you haven't received it.</small>
+          <small className="is-soon">The day has passed. <ContactLink /> if you haven't received it.</small>
         )}
       </div>
     </li>
@@ -192,7 +223,7 @@ function MyReward({ purchase }) {
 function Way({ href, icon: Icon, title, note }) {
   const Tag = href ? 'a' : 'div'
   return (
-    <Tag {...(href ? { href } : {})} className="rewards-hero__way">
+    <Tag {...(href ? { href } : {})} className="way-card">
       <span><Icon size={20} /></span>
       <div>
         <strong>{title}</strong>
@@ -227,16 +258,20 @@ export default function Rewards() {
       const open = (d) => (drawStatus(d).key === 'open' ? 0 : 1)
       return open(a) - open(b) || String(a.closesAt).localeCompare(String(b.closesAt))
     })
-  const finished = visible
+  const results = visible
     .filter((d) => drawStatus(d).key === 'results')
     .sort((a, b) => String(b.resultsAt).localeCompare(String(a.resultsAt)))
+  // A result stays a full card for a week, so people who entered see it.
+  const isRecent = (d) => Date.now() - new Date(d.resultsAt) < 7 * 86_400_000
+  const featured = [...running, ...results.filter(isRecent)]
+  const finished = results.filter((d) => !isRecent(d))
   const giftCoupons = offersOnSale(offers, shop).filter((o) => o.rewardText)
   // What's still to come is what they came to check; given ones go last.
   const rewardRank = (p) => (p.rewardGivenAt ? 2 : dayCountdown(p.reward.day) ? 0 : 1)
   const myRewards = rewardList(mine).sort((a, b) => rewardRank(a) - rewardRank(b))
 
   const ready = loaded && offersLoaded && settingsLoaded
-  const nothing = !running.length && !finished.length && !giftCoupons.length && !myRewards.length
+  const nothing = !featured.length && !finished.length && !giftCoupons.length && !myRewards.length
 
   return (
     <>
@@ -245,14 +280,13 @@ export default function Rewards() {
         <meta name="description" content="Enter our free reward draw, or get a guaranteed gift with a coupon." />
       </Head>
 
-      <div className="rewards">
-        <section className="rewards-hero">
-          <div className="rewards-hero__copy">
-            <span className="rewards-hero__eyebrow"><Sparkles size={14} /> A-one rewards</span>
-            <h1>A little extra with your groceries</h1>
-            <p>There are two ways to get rewarded here. They're separate, so you can enjoy either one.</p>
-          </div>
-          <div className="rewards-hero__ways">
+      <div className="offers-page">
+        <PageHero
+          kicker="A-one rewards"
+          title="A little extra with your groceries"
+          body="There are two ways to get rewarded here. They're separate, so you can enjoy either one."
+        >
+          <div className="page-hero__ways">
             <Way
               href={running.length ? '#free-draw' : null}
               icon={Trophy}
@@ -266,14 +300,17 @@ export default function Rewards() {
               note={giftCoupons.length || !ready ? 'Buy a gift coupon. Every buyer gets the gift on the day.' : 'No gift coupons right now. Check back soon.'}
             />
           </div>
-        </section>
+        </PageHero>
+
+        {!user && ready && !nothing && (
+          <p className="rewards-signin">
+            <Link href="/login?next=/rewards">Sign in</Link> to see your rewards and enter draws.
+          </p>
+        )}
 
         {myRewards.length > 0 && (
           <section>
-            <header className="rewards__head">
-              <h2>Your rewards</h2>
-              <p>Gifts from coupons you've bought. See your codes under <Link href="/coupons/mine">My coupons</Link>.</p>
-            </header>
+            <SectionHead kicker="Yours" title="Your rewards" note="Gifts from coupons you've bought." href="/coupons/mine" linkLabel="My coupons" />
             <ul className="my-rewards">
               {myRewards.map((p) => <MyReward key={p.id} purchase={p} />)}
             </ul>
@@ -286,38 +323,33 @@ export default function Rewards() {
           <div className="my-orders__empty">
             <Gift size={36} />
             <h2>No rewards right now</h2>
-            <p>Check back soon, or see this week's deals.</p>
-            <Link href="/deals" className="shop-btn">See deals</Link>
+            <p>Check back soon, or see what's on the shelves.</p>
+            <Link href="/catalog" className="shop-btn">Shop groceries</Link>
           </div>
         ) : (
           <>
-            {running.length > 0 && (
+            {featured.length > 0 && (
               <section id="free-draw">
-                <header className="rewards__head">
-                  <h2>Free draw</h2>
-                  <p>Free for everyone. You don't need to buy anything.</p>
-                </header>
-                {running.map((draw) => <DrawCard key={draw.id} draw={draw} />)}
+                <SectionHead kicker="Free to enter" title="Free draw" note="Free for everyone. You don't need to buy anything." />
+                {featured.map((draw) => <DrawCard key={draw.id} draw={draw} />)}
               </section>
             )}
 
             {giftCoupons.length > 0 && (
               <section id="gift-coupons">
-                <header className="rewards__head">
-                  <h2>Coupons with a gift</h2>
-                  <p>Everyone who buys one gets the gift on its reward day. It isn't a draw, and it doesn't affect any draw.</p>
-                </header>
-                <div className={ticketGridClass(giftCoupons.length)}>
-                  {giftCoupons.map((offer) => <OfferTicket key={offer.id} offer={offer} />)}
+                <SectionHead kicker="Reward day" title="Coupons with a gift" note="Everyone who buys one gets the gift on its reward day. It isn't a draw, and it doesn't affect any draw." />
+                <div className="offers-split">
+                  <div className="ticket-list">
+                    {giftCoupons.map((offer) => <OfferTicket key={offer.id} offer={offer} />)}
+                  </div>
+                  <StepsCard title="How reward day works" steps={REWARD_DAY_STEPS} />
                 </div>
               </section>
             )}
 
             {finished.length > 0 && (
               <section>
-                <header className="rewards__head">
-                  <h2>Past winners</h2>
-                </header>
+                <SectionHead kicker="Results" title="Past winners" />
                 <ul className="past-winners">
                   {finished.map((draw) => (
                     <li key={draw.id}>

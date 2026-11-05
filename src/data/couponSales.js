@@ -37,21 +37,96 @@ export const PURCHASE_STATUS = {
   revoked: { label: "Cancelled", tone: "neutral" },
 };
 
-/** What each kind of method asks for. Wallets need a number; a bank also needs its name. */
-export const PAYMENT_TYPES = [
-  { value: "jazzcash", label: "JazzCash", numberLabel: "JazzCash number", placeholder: "0300 1234567" },
-  { value: "easypaisa", label: "Easypaisa", numberLabel: "Easypaisa number", placeholder: "0345 1234567" },
-  { value: "bank", label: "Bank transfer", numberLabel: "IBAN or account number", placeholder: "PK36 SCBL 0000 0011 2345 6702" },
-  { value: "other", label: "Other", numberLabel: "Account number (optional)", placeholder: "" },
+/** A method for customers anywhere, such as an international transfer service. */
+export const ALL_COUNTRIES = "ALL";
+
+const COUNTRY_CODES =
+  "AE AF AL AM AR AT AU AZ BA BD BE BG BH BN BR BY CA CH CL CN CO CY CZ DE DK DZ EE EG ES ET FI FR GB GE GH GR HK HR HU ID IE IL IN IQ IR IS IT JO JP KE KG KR KW KZ LB LK LT LU LV LY MA MM MT MV MX MY NG NL NO NP NZ OM PE PH PK PL PS PT QA RO RS RU SA SD SE SG SI SK SO SY TH TJ TM TN TR TW TZ UA UG US UZ VN YE ZA".split(
+    " "
+  );
+
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+
+export const countryName = (code) =>
+  code === ALL_COUNTRIES ? "All countries" : regionNames.of(code) || code;
+
+/** Every country for a dropdown: the shop's home market first, then A to Z. */
+export const COUNTRIES = [
+  "PK",
+  ...COUNTRY_CODES.filter((code) => code !== "PK").sort((a, b) => countryName(a).localeCompare(countryName(b))),
 ];
 
-export const EMPTY_METHOD = { id: "", type: "", name: "", accountName: "", accountNumber: "", bankName: "", note: "" };
+/** What each kind of method asks for. Wallets need a number; a bank also needs its name. */
+export const PAYMENT_TYPES = [
+  { value: "jazzcash", label: "JazzCash", countries: ["PK"], numberLabel: "JazzCash number", placeholder: "0300 1234567" },
+  { value: "easypaisa", label: "Easypaisa", countries: ["PK"], numberLabel: "Easypaisa number", placeholder: "0345 1234567" },
+  { value: "bank", label: "Bank transfer", numberLabel: "IBAN or account number", placeholder: "IBAN or account number" },
+  { value: "other", label: "Other", numberLabel: "Account number (optional)", placeholder: "" },
+  // Paid and checked online, so there's no account to show or receipt to upload.
+  { value: "paypal", label: "PayPal", online: true },
+];
+
+export const EMPTY_METHOD = { id: "", country: "PK", type: "", name: "", accountName: "", accountNumber: "", bankName: "", note: "" };
+
+/** Kinds of method on offer in a country. A local wallet only exists where it operates. */
+export const typesForCountry = (country) =>
+  PAYMENT_TYPES.filter((t) => !t.countries || t.countries.includes(country));
+
+const typeOfMethod = (method) =>
+  PAYMENT_TYPES.find((t) => t.value === method.type || t.label.toLowerCase() === String(method.name || "").trim().toLowerCase());
+
+/** Methods saved before countries existed: a local wallet is its own country; the rest are open to all. */
+export function methodCountry(method) {
+  if (method.country) return method.country;
+  return typeOfMethod(method)?.countries?.[0] || ALL_COUNTRIES;
+}
+
+/** What a customer pays by in their country: its own methods, and any open to everyone. */
+export const methodsForCountry = (methods = [], country) =>
+  methods.filter((m) => {
+    const home = methodCountry(m);
+    return home === country || home === ALL_COUNTRIES;
+  });
+
+/** The countries a customer can choose from, in the order they appear in COUNTRIES. */
+export function paymentCountries(methods = []) {
+  const found = new Set(methods.map(methodCountry));
+  return COUNTRIES.filter((code) => found.has(code));
+}
+
+export const hasMethodForAnyCountry = (methods = []) => methods.some((m) => methodCountry(m) === ALL_COUNTRIES);
+
+const TIME_ZONE_COUNTRIES = {
+  "Asia/Karachi": "PK",
+  "Asia/Dubai": "AE",
+  "Asia/Riyadh": "SA",
+  "Asia/Qatar": "QA",
+  "Asia/Kuwait": "KW",
+  "Asia/Muscat": "OM",
+  "Asia/Bahrain": "BH",
+  "Asia/Kolkata": "IN",
+  "Asia/Dhaka": "BD",
+  "Europe/London": "GB",
+};
+
+/** A first guess only, from the device's settings: the customer can always change it. */
+export function guessCountry({ timeZone, language } = {}) {
+  if (TIME_ZONE_COUNTRIES[timeZone]) return TIME_ZONE_COUNTRIES[timeZone];
+  const region = String(language || "").split("-")[1]?.toUpperCase();
+  return COUNTRY_CODES.includes(region) ? region : "";
+}
+
+/** What's saved on a purchase, so staff know which account to check. */
+export const methodPaidBy = (method) => {
+  const country = methodCountry(method);
+  return country === ALL_COUNTRIES ? method.name : `${method.name} (${countryName(country)})`;
+};
 
 /** A saved method back into the form. Older ones were one block of text, which becomes the note. */
 export function methodToForm(method) {
-  const known = PAYMENT_TYPES.find((t) => t.value === method.type || t.label.toLowerCase() === String(method.name || "").trim().toLowerCase());
-  if (method.type) return { ...EMPTY_METHOD, ...method };
-  return { ...EMPTY_METHOD, id: method.id, type: known?.value || "other", name: method.name || "", note: method.details || "" };
+  const country = methodCountry(method);
+  if (method.type) return { ...EMPTY_METHOD, ...method, country };
+  return { ...EMPTY_METHOD, id: method.id, country, type: typeOfMethod(method)?.value || "other", name: method.name || "", note: method.details || "" };
 }
 
 /** What gets saved. `details` is the text customers read and the older screens rely on. */
@@ -60,6 +135,9 @@ export function methodFields(form) {
   const clean = (value) => String(value || "").trim();
   const bankName = form.type === "bank" ? clean(form.bankName) : "";
   const name = form.type === "other" ? clean(form.name) : bankName || type?.label || "";
+  if (form.type === "paypal") {
+    return { id: form.id, country: form.country, type: "paypal", name: "PayPal", details: "Pay online with PayPal or a card." };
+  }
   const lines = [
     clean(form.accountName) && `Account name: ${clean(form.accountName)}`,
     clean(form.accountNumber) && `Number: ${clean(form.accountNumber)}`,
@@ -67,6 +145,7 @@ export function methodFields(form) {
   ];
   return {
     id: form.id,
+    country: form.country,
     type: form.type,
     name,
     accountName: clean(form.accountName),
@@ -79,6 +158,7 @@ export function methodFields(form) {
 
 export function methodErrors(form) {
   const errors = {};
+  if (form.type === "paypal") return errors;
   const digits = String(form.accountNumber || "").replace(/\W/g, "");
   if (form.type === "other") {
     if (!String(form.name || "").trim()) errors.name = "Give this method a name";
@@ -92,7 +172,8 @@ export function methodErrors(form) {
 }
 
 /** Saved but gives no account to pay into, so a customer would be stuck. */
-export const methodLacksAccount = (method) => !method.accountNumber && !accountToCopy(method.details);
+export const methodLacksAccount = (method) =>
+  method.type !== "paypal" && !method.accountNumber && !accountToCopy(method.details);
 
 /** The methods a customer can choose from: complete rows only. */
 export function paymentMethods(shop) {

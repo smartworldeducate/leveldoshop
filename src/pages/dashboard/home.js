@@ -560,7 +560,7 @@ export default function HomeContentPage() {
                     placeholder="Start shopping"
                   />
                 </Field>
-                <Field label="Button link" hint="/catalog, /deals, /catalog?category=bakery">
+                <Field label="Button link" hint="/catalog, /coupons, /catalog?category=bakery">
                   <Input
                     value={slide.ctaHref || ""}
                     onChange={(e) => patchItem("slides", i, { ctaHref: e.target.value })}

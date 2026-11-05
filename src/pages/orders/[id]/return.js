@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import ContactLink from '../../../components/ContactLink'
 import { useRouter } from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
@@ -111,7 +112,7 @@ export default function RequestReturn() {
             <PackageOpen size={36} />
             <h2>{order ? BLOCK_MESSAGES[block] : "We couldn't find this order"}</h2>
             <p>If something is wrong with your order, we can still help.</p>
-            <Link href="/contact" className="shop-btn">Contact us</Link>
+            <ContactLink className="shop-btn" />
           </div>
         ) : (
           <div className="my-orders__layout">

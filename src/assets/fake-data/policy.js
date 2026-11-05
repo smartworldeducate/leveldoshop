@@ -14,7 +14,7 @@ const policy = [
   {
     id: "freshness",
     title: "Freshness promise",
-    icon: "bx bx-leaf",
+    icon: "bx bx-check-shield",
     description: "Not fresh? We replace it.",
     content: [
       "Every fruit, vegetable, dairy and bakery item is checked against its best-before date before it is packed for you.",
@@ -37,14 +37,14 @@ const policy = [
   },
   {
     id: "rewards",
-    title: "Weekly rewards",
+    title: "Coupons and rewards",
     icon: "bx bx-gift",
-    description: "Points on every basket.",
+    description: "Ways to save, and a free draw.",
     content: [
-      "Every completed order earns points that convert into money off future baskets, applied automatically at checkout.",
-      "Members see the weekly market deals a day early, which matters most on the produce that sells out fastest.",
-      "Regular shoppers can save a repeat basket and reorder the household staples in a single tap.",
-      "Points never expire while your account stays active, so occasional shoppers benefit too."
+      "Free codes can be used in your basket at no cost. Each has its own dates and conditions, shown beside it.",
+      "A coupon you buy gets its own code once we have checked your payment. It works once, and any value left over on that order is lost.",
+      "Some coupons include a gift. Everyone who buys one gets the gift on its reward day, once we have confirmed their payment.",
+      "Our reward draws are free to enter, with no purchase needed. Buying anything does not improve your chances, and the winner is picked at random after entries close."
     ]
   }
 ];

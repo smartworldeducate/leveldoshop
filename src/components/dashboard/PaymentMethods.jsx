@@ -1,26 +1,30 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
-import { AlertTriangle, ArrowLeft, Check, Landmark, Pencil, Plus, Save, Smartphone, Trash2, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CreditCard, Landmark, Pencil, Plus, Save, Smartphone, Trash2, Wallet } from "lucide-react";
 
 import Card, { CardHeader } from "./ui/Card";
 import Button from "./ui/Button";
-import Field, { Input, Textarea } from "./ui/Field";
+import Field, { Input, Select, Textarea } from "./ui/Field";
 import { SwitchRow } from "./ui/Switch";
 
 import { saveSettings } from "@/redux/settings/settingsSlice";
 import {
+  ALL_COUNTRIES,
+  COUNTRIES,
   EMPTY_METHOD,
-  PAYMENT_TYPES,
+  countryName,
   generateToken,
+  methodCountry,
   methodErrors,
   methodFields,
   methodLacksAccount,
   methodToForm,
   paymentMethods,
+  typesForCountry,
 } from "@/data/couponSales";
 
-const ICONS = { jazzcash: Smartphone, easypaisa: Smartphone, bank: Landmark, other: Wallet };
+const ICONS = { jazzcash: Smartphone, easypaisa: Smartphone, bank: Landmark, other: Wallet, paypal: CreditCard };
 const CHECK_TIMES = ["1 hour", "6 hours", "24 hours", "2 days"];
 
 /** Exactly what a customer reads once they choose this method. */
@@ -29,7 +33,10 @@ function CustomerPreview({ form }) {
   return (
     <div className="rounded-2xl bg-[#F6F8FC] p-4">
       <p className="text-xs font-semibold text-slate-400">What customers will see</p>
-      <p className="mt-2 text-base font-bold text-slate-800">{method.name || "Payment method"}</p>
+      <p className="mt-2 text-xs font-semibold text-[#35528F]">
+        {method.country === ALL_COUNTRIES ? "For customers in any country" : `For customers in ${countryName(method.country)}`}
+      </p>
+      <p className="mt-1 text-base font-bold text-slate-800">{method.name || "Payment method"}</p>
       {method.accountName && <p className="mt-2 text-xs text-slate-400">Account name</p>}
       {method.accountName && <p className="text-sm font-semibold text-slate-700">{method.accountName}</p>}
       {method.accountNumber && <p className="mt-2 text-xs text-slate-400">Send to</p>}
@@ -43,7 +50,9 @@ function CustomerPreview({ form }) {
 function MethodForm({ initial, saving, onSave, onCancel }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
-  const type = PAYMENT_TYPES.find((t) => t.value === form.type);
+  // Offered only once the shop's PayPal keys are in place.
+  const available = typesForCountry(form.country).filter((t) => t.value !== "paypal" || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID);
+  const type = available.find((t) => t.value === form.type);
 
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -61,7 +70,7 @@ function MethodForm({ initial, saving, onSave, onCancel }) {
     <Card>
       <CardHeader
         title={form.id ? "Change payment method" : "Add a payment method"}
-        subtitle={type ? "Fill this in, then save. Customers see it straight away." : "How should customers send you money?"}
+        subtitle={type ? "Fill this in, then save. Customers see it straight away." : "Choose the country, then how customers there send you money."}
         action={
           <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onCancel}>
             Back
@@ -69,8 +78,28 @@ function MethodForm({ initial, saving, onSave, onCancel }) {
         }
       />
 
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {PAYMENT_TYPES.map((t) => {
+      <div className="mt-5 max-w-sm">
+        <Field label="Customers in which country?" hint="They only see methods for the country they choose.">
+          <Select
+            name="country"
+            value={form.country}
+            onChange={(e) => {
+              const country = e.target.value;
+              // A local wallet can't move to a country it doesn't operate in.
+              setForm((f) => ({ ...f, country, type: typesForCountry(country).some((t) => t.value === f.type) ? f.type : "" }));
+              setErrors({});
+            }}
+          >
+            <option value={ALL_COUNTRIES}>{countryName(ALL_COUNTRIES)}</option>
+            {COUNTRIES.map((code) => (
+              <option key={code} value={code}>{countryName(code)}</option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {available.map((t) => {
           const Icon = ICONS[t.value];
           const selected = form.type === t.value;
           return (
@@ -96,6 +125,11 @@ function MethodForm({ initial, saving, onSave, onCancel }) {
       {type && (
         <form onSubmit={submit} noValidate className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="flex min-w-0 flex-col gap-4">
+            {type.online && (
+              <p className="text-sm text-slate-500">
+                Customers pay online with PayPal or a card, with no receipt to upload. You'll see PayPal's confirmation before you issue their code.
+              </p>
+            )}
             {form.type === "other" && (
               <Field label="Name of the method" required error={errors.name}>
                 <Input name="name" value={form.name} onChange={set("name")} placeholder="NayaPay" maxLength={40} />
@@ -106,15 +140,19 @@ function MethodForm({ initial, saving, onSave, onCancel }) {
                 <Input name="bankName" value={form.bankName} onChange={set("bankName")} placeholder="Meezan Bank" maxLength={40} />
               </Field>
             )}
-            <Field label="Name on the account" required={form.type !== "other"} error={errors.accountName} hint="Customers check this before sending money.">
-              <Input name="accountName" value={form.accountName} onChange={set("accountName")} placeholder="A-one Grocery" maxLength={60} />
-            </Field>
-            <Field label={type.numberLabel} required={form.type !== "other"} error={errors.accountNumber}>
-              <Input name="accountNumber" value={form.accountNumber} onChange={set("accountNumber")} placeholder={type.placeholder} maxLength={40} />
-            </Field>
-            <Field label={form.type === "other" ? "Instructions" : "Extra instructions (optional)"} error={errors.note}>
-              <Textarea name="note" rows={2} value={form.note} onChange={set("note")} placeholder="Please send the exact amount." />
-            </Field>
+            {!type.online && (
+              <>
+                <Field label="Name on the account" required={form.type !== "other"} error={errors.accountName} hint="Customers check this before sending money.">
+                  <Input name="accountName" value={form.accountName} onChange={set("accountName")} placeholder="A-one Grocery" maxLength={60} />
+                </Field>
+                <Field label={type.numberLabel} required={form.type !== "other"} error={errors.accountNumber}>
+                  <Input name="accountNumber" value={form.accountNumber} onChange={set("accountNumber")} placeholder={type.placeholder} maxLength={40} />
+                </Field>
+                <Field label={form.type === "other" ? "Instructions" : "Extra instructions (optional)"} error={errors.note}>
+                  <Textarea name="note" rows={2} value={form.note} onChange={set("note")} placeholder="Please send the exact amount." />
+                </Field>
+              </>
+            )}
             <div>
               <Button type="submit" icon={Save} loading={saving}>
                 Save payment method
@@ -135,6 +173,8 @@ export default function PaymentMethods() {
   const shop = values.couponShop;
   const methods = paymentMethods(shop);
   const usable = methods.filter((m) => !methodLacksAccount(m));
+  // Adding another usually means the same country as the last one.
+  const newMethodCountry = methods.length ? methodCountry(methods[methods.length - 1]) : EMPTY_METHOD.country;
 
   const [editing, setEditing] = useState(null);
   const [removing, setRemoving] = useState(null);
@@ -179,9 +219,9 @@ export default function PaymentMethods() {
       <Card>
         <CardHeader
           title="Payment methods"
-          subtitle="Where customers send money for a coupon. They choose one of these when they buy."
+          subtitle="Where customers send money for a coupon. They choose their country, then see only its methods."
           action={
-            <Button size="sm" icon={Plus} onClick={() => setEditing({ ...EMPTY_METHOD })}>
+            <Button size="sm" icon={Plus} onClick={() => setEditing({ ...EMPTY_METHOD, country: newMethodCountry })}>
               Add payment method
             </Button>
           }
@@ -190,7 +230,7 @@ export default function PaymentMethods() {
         {methods.length === 0 ? (
           <button
             type="button"
-            onClick={() => setEditing({ ...EMPTY_METHOD })}
+            onClick={() => setEditing({ ...EMPTY_METHOD, country: newMethodCountry })}
             className="mt-5 flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 p-8 text-slate-500 transition hover:border-[#5B83D6] hover:text-[#4267B2]"
           >
             <Wallet className="h-8 w-8" />
@@ -209,6 +249,7 @@ export default function PaymentMethods() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-slate-800">{m.name}</p>
+                      <p className="mt-0.5 text-xs font-semibold text-[#35528F]">{countryName(methodCountry(m))}</p>
                       <p className="mt-0.5 whitespace-pre-line break-words text-sm text-slate-500">{m.details}</p>
                     </div>
                   </div>

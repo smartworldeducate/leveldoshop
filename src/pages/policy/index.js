@@ -3,6 +3,9 @@ import PageGuard from '../../components/PageGuard'
 import { useRouter } from "next/router";
 import policy from "../../assets/fake-data/policy";
 import PolicyAccordion from "../../components/PolicyAccordion";
+import ContactLink from "../../components/ContactLink";
+import PageHero from "../../components/PageHero";
+import Head from "next/head";
 
 const PolicyPage = () => {
   const router = useRouter();
@@ -35,9 +38,17 @@ const PolicyPage = () => {
   };
 
   return (
-    <div className="policy-page">
-      <h1>Store Policies</h1>
-
+    <div className="offers-page">
+      <Head>
+        <title>Store policies</title>
+        <meta name="description" content="Delivery, freshness, payment, coupons and rewards." />
+      </Head>
+      <PageHero
+        kicker="Help"
+        title="Store policies"
+        body="How delivery, freshness, payment, coupons and rewards work."
+      />
+      <div className="policy-page">
       {policy.map(item => (
         <PolicyAccordion
           key={item.id}
@@ -46,6 +57,8 @@ const PolicyPage = () => {
           onToggle={() => handleToggle(item.id)}
         />
       ))}
+      </div>
+      <p className="rewards-more">Still have a question? <ContactLink /></p>
     </div>
   );
 };

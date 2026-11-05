@@ -225,3 +225,37 @@
     }
   }
 }
+
+.login-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 14px;
+    color: $txt-main-color;
+
+    span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: $grad-main;
+        color: #fff;
+        font-size: 22px;
+    }
+
+    strong {
+        font-size: 20px;
+        font-weight: 800;
+    }
+}
+
+.login-back {
+    display: block;
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: $main-color;
+}

@@ -13,9 +13,6 @@ import { couponShopIsOpen, offersOnSale } from '../data/couponSales'
 const mainNav = [
   { display: 'Home', path: '/' },
   { display: 'Shop', path: '/catalog' },
-  { display: 'Deals', path: '/deals', page: 'deals' },
-  { display: 'Blog', path: '/posts', page: 'posts' },
-  { display: 'Contact', path: '/contact', page: 'contact' }
 ]
 
 export default function Header() {

@@ -8,6 +8,8 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import google2 from '../assets/images/google2.png'
 import Image from "next/image";
+import Head from "next/head";
+import Link from "next/link";
 export default function Login() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -55,16 +57,17 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <Head>
+        <title>Sign in</title>
+        <meta name="robots" content="noindex" />
+      </Head>
       <div className="login-wrapper">
         <div className="login-card">
           <div className="login-header">
-            <Image
-              src={google2}
-              alt="Google"
-               width={45}          // 👈 control width
-               height={45}
-              className="google-logo"
-            />
+            <Link href="/" className="login-brand">
+              <span><i className="bx bx-basket"></i></span>
+              <strong>A-one</strong>
+            </Link>
             <h1>Sign in</h1>
             <p>Continue with your account</p>
           </div>
@@ -111,6 +114,7 @@ export default function Login() {
               Continue with Google
             </button>
           </div>
+          <Link href="/" className="login-back">Back to the shop</Link>
         </div>
       </div>
     </div>
