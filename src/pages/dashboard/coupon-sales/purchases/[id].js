@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
@@ -13,13 +14,28 @@ import Field, { Textarea } from "@/components/dashboard/ui/Field";
 import PrivateReceipt from "@/components/PrivateReceipt";
 import PayPalCheck from "@/components/dashboard/PayPalCheck";
 
-import { confirmPurchase, fetchPurchases, rejectPurchase, revokePurchase } from "@/redux/couponSales/couponSalesSlice";
+import { confirmPurchase, fetchPurchases, markCodeSent, rejectPurchase, revokePurchase } from "@/redux/couponSales/couponSalesSlice";
+import { fetchCoupons } from "@/redux/coupons/couponsSlice";
 import { fetchDraws } from "@/redux/rewards/rewardsSlice";
-import { formatDateTime } from "@/lib/analytics";
+import { formatDateTime, timeAgo } from "@/lib/analytics";
 import { formatMoney } from "@/data/grocery";
 import { describeDiscount } from "@/data/coupons";
 import { whatsappNumber } from "@/data/notifications";
-import { PURCHASE_STATUS, duplicateReferences, formatRewardDay, nextToCheck, purchaseMessage, receivedMessage } from "@/data/couponSales";
+import { shortOrderId } from "@/data/returns";
+import {
+  PURCHASE_STATUS,
+  REJECT_REASONS,
+  buyerHistory,
+  duplicateReferences,
+  formatRewardDay,
+  nextToCheck,
+  purchaseList,
+  purchaseMessage,
+  receivedMessage,
+  rejectedMessage,
+  revokedMessage,
+  soldCodeState,
+} from "@/data/couponSales";
 import { drawStatus, formatDrawDate } from "@/data/rewards";
 
 const whatsappLink = (phone, text) => {
@@ -36,12 +52,13 @@ function Row({ label, children }) {
   );
 }
 
-function WhatsAppLink({ href, children, solid = false }) {
+function WhatsAppLink({ href, children, solid = false, onClick }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
+      onClick={onClick}
       className={`flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${
         solid ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
       }`}
@@ -58,6 +75,8 @@ export default function PurchaseReviewPage() {
   const { purchases, purchasesLoaded } = useSelector((s) => s.couponSales);
   const shop = useSelector((s) => s.settings.values.couponShop);
   const draws = useSelector((s) => s.rewards.draws);
+  const coupons = useSelector((s) => s.coupons);
+  const orders = useSelector((s) => s.adminOrders.items);
 
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState("");
@@ -70,6 +89,7 @@ export default function PurchaseReviewPage() {
   useEffect(() => {
     if (!purchasesLoaded) dispatch(fetchPurchases());
     dispatch(fetchDraws());
+    dispatch(fetchCoupons());
   }, [dispatch, purchasesLoaded]);
 
   // The same page is reused when moving on to the next payment.
@@ -103,8 +123,9 @@ export default function PurchaseReviewPage() {
     }
   };
 
+  // Back to the list this purchase is in, not always the first one.
   const back = (
-    <Button variant="outline" size="sm" icon={ArrowLeft} href="/dashboard/coupon-sales">
+    <Button variant="outline" size="sm" icon={ArrowLeft} href={purchase ? `/dashboard/coupon-sales?show=${purchaseList(purchase)}` : "/dashboard/coupon-sales"}>
       Sell coupons
     </Button>
   );
@@ -138,6 +159,19 @@ export default function PurchaseReviewPage() {
     receivedMessage(purchase, { checkTime: shop?.checkTime, draw: openDraw, drawDate: openDraw && formatDrawDate(openDraw.resultsAt) })
   );
   const codeLink = purchase.couponCode ? whatsappLink(purchase.buyer?.phone, purchaseMessage(purchase, ordersUrl)) : null;
+  const history = buyerHistory(purchases, purchase);
+
+  const soldCode = coupons.items.find((c) => c.code === purchase.couponCode);
+  const codeState = coupons.loaded && purchase.couponCode ? soldCodeState(soldCode) : null;
+  const usedOn = purchase.couponCode ? orders.find((o) => o.coupon?.code === purchase.couponCode) : null;
+
+  const sent = () => {
+    if (!purchase.codeSentAt) dispatch(markCodeSent(purchase.id));
+  };
+  const toldLink = whatsappLink(
+    purchase.buyer?.phone,
+    purchase.status === "rejected" ? rejectedMessage(purchase) : purchase.status === "revoked" ? revokedMessage(purchase) : ""
+  );
 
   return (
     <DashboardLayout title={purchase.token || "Payment"} eyebrow="Sell coupons" actions={back}>
@@ -171,6 +205,16 @@ export default function PurchaseReviewPage() {
               <Row label="Customer">{purchase.buyer?.name || "Customer"}</Row>
               <Row label="WhatsApp">{purchase.buyer?.phone}</Row>
               <Row label="Email">{purchase.buyer?.email || "Not given"}</Row>
+              <Row label="Earlier purchases">
+                {history.total === 0 ? (
+                  "First purchase"
+                ) : (
+                  <>
+                    {history.confirmed} confirmed
+                    {history.rejected > 0 && <span className="text-rose-600">, {history.rejected} rejected</span>}
+                  </>
+                )}
+              </Row>
               {purchase.coupon && <Row label="Gives">{describeDiscount(purchase.coupon)}</Row>}
               {purchase.reward?.text && <Row label="Reward">{purchase.reward.text}, {formatRewardDay(purchase.reward.day)}</Row>}
               {purchase.rejectNote && <Row label="Why rejected">{purchase.rejectNote}</Row>}
@@ -187,6 +231,26 @@ export default function PurchaseReviewPage() {
               {rejecting ? (
                 <>
                   <CardHeader title="Reject this purchase" />
+                  {purchase.paypalOrderId && (
+                    <p className="mt-3 flex items-start gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> If PayPal took their money, refund it at paypal.com. Rejecting here doesn't send it back.
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {REJECT_REASONS.map((reason) => (
+                      <button
+                        key={reason}
+                        type="button"
+                        aria-pressed={note === reason}
+                        onClick={() => setNote(reason)}
+                        className={`rounded-full px-3 py-1.5 text-left text-xs font-semibold transition ${
+                          note === reason ? "bg-[#4267B2] text-white" : "bg-[#F2F6FC] text-slate-600 hover:text-[#4267B2]"
+                        }`}
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
                   <div className="mt-4">
                     <Field label="Why?" required hint="The customer sees this on their My coupons page.">
                       <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -227,7 +291,15 @@ export default function PurchaseReviewPage() {
 
           {purchase.status === "confirmed" && (
             <Card>
-              <CardHeader title="The code is ready" subtitle="Send it to the customer on WhatsApp. It's also on their My coupons page." />
+              <CardHeader
+                title="The code is ready"
+                subtitle={
+                  purchase.codeSentAt
+                    ? `Sent ${timeAgo(purchase.codeSentAt)}. It's also on their My coupons page.`
+                    : "Send it to the customer on WhatsApp. It's also on their My coupons page."
+                }
+                action={codeState && <Badge tone={codeState.tone}>{codeState.label}</Badge>}
+              />
               <button
                 type="button"
                 aria-label={`Copy code ${purchase.couponCode}`}
@@ -236,9 +308,27 @@ export default function PurchaseReviewPage() {
               >
                 {purchase.couponCode} <Copy className="h-4 w-4 shrink-0" />
               </button>
+              {soldCode?.endsAt && codeState?.key === "unused" && (
+                <p className="mt-2 text-xs text-slate-400">Works until {formatDateTime(soldCode.endsAt)}</p>
+              )}
+              {usedOn && (
+                <p className="mt-2 text-sm text-slate-500">
+                  Used on order{" "}
+                  <Link href={`/dashboard/orders/${usedOn.id}`} className="font-semibold text-[#4267B2] underline">{shortOrderId(usedOn.id)}</Link>
+                </p>
+              )}
               <div className="mt-3 flex flex-col gap-2">
-                {codeLink && <WhatsAppLink href={codeLink} solid>Send code on WhatsApp</WhatsAppLink>}
-                {revoking ? (
+                {codeLink && codeState?.key !== "used" && (
+                  <WhatsAppLink href={codeLink} solid={!purchase.codeSentAt} onClick={sent}>
+                    {purchase.codeSentAt ? "Send code again" : "Send code on WhatsApp"}
+                  </WhatsAppLink>
+                )}
+                {!purchase.codeSentAt && codeState?.key !== "used" && (
+                  <Button variant="outline" onClick={sent}>I've already sent it</Button>
+                )}
+                {codeState?.key === "used" ? (
+                  <p className="text-center text-xs text-slate-400">This code has been spent, so it can't be cancelled.</p>
+                ) : revoking ? (
                   <div className="rounded-2xl bg-rose-50 p-3">
                     <p className="text-sm text-rose-800">
                       Use this after refunding the customer: the app doesn't send the money back. The code stops working straight away, the sale leaves your totals, and the buyer comes off the reward-day list.
@@ -253,6 +343,18 @@ export default function PurchaseReviewPage() {
                 ) : (
                   <Button variant="ghost" onClick={() => setRevoking(true)}>Cancel code</Button>
                 )}
+              </div>
+            </Card>
+          )}
+
+          {["rejected", "revoked"].includes(purchase.status) && toldLink && (
+            <Card>
+              <CardHeader
+                title="Tell the customer"
+                subtitle={purchase.status === "rejected" ? "They can see the reason on their My coupons page, but they may not look." : "Let them know their code no longer works."}
+              />
+              <div className="mt-4">
+                <WhatsAppLink href={toldLink} solid>Send message on WhatsApp</WhatsAppLink>
               </div>
             </Card>
           )}

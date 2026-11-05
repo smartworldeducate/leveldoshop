@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
-import { CalendarClock, CheckCircle2, Gift, Trophy } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Gift, LogIn, Share2, Trophy } from 'lucide-react'
 
 import { OfferTicket } from '../../components/CouponTicket'
 import HelpList from '../../components/HelpList'
@@ -52,7 +52,7 @@ function Countdown({ until, onEnd }) {
   ]
 
   return (
-    <div className="countdown" role="timer">
+    <div className={`countdown${left.days === 0 ? ' is-soon' : ''}`} role="timer">
       {parts.map(([label, value]) => (
         <div key={label}>
           <strong>{String(value).padStart(2, '0')}</strong>
@@ -60,6 +60,34 @@ function Countdown({ until, onEnd }) {
         </div>
       ))}
     </div>
+  )
+}
+
+const DRAW_PILL = {
+  open: { label: 'Open now', tone: 'open' },
+  closed: { label: 'Entries closed', tone: 'wait' },
+  due: { label: 'Picking the winner', tone: 'wait' },
+  results: { label: 'Results are out', tone: 'done' },
+}
+
+/** Where the draw is up to, so nobody has to work it out from two dates. */
+function DrawTimeline({ draw, status }) {
+  const reached = { open: 0, closed: 1, due: 1, results: 3 }[status] ?? 0
+  const steps = [
+    { title: 'Entries open', note: `${reached > 0 ? 'Closed' : 'Until'} ${formatDrawDate(draw.closesAt)}` },
+    { title: 'Winner picked', note: reached === 3 ? 'At random, from everyone who entered' : 'At random, after entries close' },
+    { title: 'Winner announced', note: formatDrawDate(draw.resultsAt) },
+  ]
+  return (
+    <ol className="draw__timeline">
+      {steps.map((step, i) => (
+        <li key={step.title} className={i < reached ? 'is-done' : i === reached ? 'is-now' : ''}>
+          <span>{i < reached ? <CheckCircle2 size={14} /> : null}</span>
+          <strong>{step.title}</strong>
+          <small>{step.note}</small>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -107,17 +135,24 @@ function DrawCard({ draw }) {
     setSaving(false)
   }
 
+  const pill = DRAW_PILL[status]
+  // Telling a friend adds no entries: everyone has the same single chance.
+  const shareText = `Free draw at A-one Grocery: ${draw.prize}. It's free to enter, with no purchase needed. ${typeof window === 'undefined' ? '' : `${window.location.origin}/rewards`}`
+
   return (
     <article className="draw">
       <div className="draw__prize">
-        <Gift size={38} />
+        <span className="draw__prize-icon"><Gift size={30} /></span>
         <small>{status === 'open' ? 'You could win' : 'The prize'}</small>
         <strong>{draw.prize}</strong>
-        <span className="draw__tag">Free to enter</span>
+        {status === 'open' && <span className="draw__tag">Free to enter</span>}
       </div>
 
       <div className="draw__body">
-        <h3>{draw.title}</h3>
+        <div className="draw__head">
+          <h3>{draw.title}</h3>
+          {pill && <span className={`draw__pill is-${pill.tone}`}>{pill.label}</span>}
+        </div>
 
         {status === 'open' && (
           <div>
@@ -125,11 +160,6 @@ function DrawCard({ draw }) {
             <Countdown until={draw.closesAt} onEnd={() => closeNow((n) => n + 1)} />
           </div>
         )}
-
-        <div className="draw__when">
-          <span><CalendarClock size={15} /> Entries close <strong>{formatDrawDate(draw.closesAt)}</strong></span>
-          <span><Trophy size={15} /> Winner announced <strong>{formatDrawDate(draw.resultsAt)}</strong></span>
-        </div>
 
         {status === 'closed' && (
           <div>
@@ -148,13 +178,20 @@ function DrawCard({ draw }) {
             </span>
           </p>
         )}
+        <DrawTimeline draw={draw} status={status} />
+
         {status !== 'open' && entered && !iWon && (
           <p className="draw__entered"><CheckCircle2 size={18} /> You entered this draw.</p>
         )}
 
         {status === 'open' && !authLoading && (
           entered ? (
-            <p className="draw__entered"><CheckCircle2 size={18} /> You're in this draw. Results on {formatDrawDate(draw.resultsAt)}.</p>
+            <div className="draw__entered-row">
+              <p className="draw__entered"><CheckCircle2 size={18} /> You're in this draw. Results on {formatDrawDate(draw.resultsAt)}.</p>
+              <a className="draw__share" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">
+                <Share2 size={15} /> Tell a friend
+              </a>
+            </div>
           ) : entering ? (
             <form className="checkout-fields draw__form" onSubmit={submit} noValidate>
               <div className="checkout-field">
@@ -220,15 +257,16 @@ function MyReward({ purchase }) {
 }
 
 /** A link only when there's something on the page to jump to. */
-function Way({ href, icon: Icon, title, note }) {
+function Way({ href, icon: Icon, title, note, tag }) {
   const Tag = href ? 'a' : 'div'
   return (
     <Tag {...(href ? { href } : {})} className="way-card">
       <span><Icon size={20} /></span>
       <div>
-        <strong>{title}</strong>
+        <strong>{title} {tag && <em>{tag}</em>}</strong>
         <small>{note}</small>
       </div>
+      {href && <ArrowRight size={18} className="way-card__arrow" />}
     </Tag>
   )
 }
@@ -291,12 +329,14 @@ export default function Rewards() {
               href={running.length ? '#free-draw' : null}
               icon={Trophy}
               title="Free draw"
+              tag="A chance to win"
               note={running.length || !ready ? 'Enter for free. One person is selected at random.' : 'No draw is running right now. Check back soon.'}
             />
             <Way
               href={giftCoupons.length ? '#gift-coupons' : null}
               icon={Gift}
               title="Reward day"
+              tag="Guaranteed gift"
               note={giftCoupons.length || !ready ? 'Buy a gift coupon. Every buyer gets the gift on the day.' : 'No gift coupons right now. Check back soon.'}
             />
           </div>
@@ -304,7 +344,8 @@ export default function Rewards() {
 
         {!user && ready && !nothing && (
           <p className="rewards-signin">
-            <Link href="/login?next=/rewards">Sign in</Link> to see your rewards and enter draws.
+            <LogIn size={16} aria-hidden="true" />
+            <span><Link href="/login?next=/rewards">Sign in</Link> to see your rewards and enter draws.</span>
           </p>
         )}
 

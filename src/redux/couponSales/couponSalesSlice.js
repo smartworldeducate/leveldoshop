@@ -252,6 +252,17 @@ export const markRewardGiven = createAsyncThunk("couponSales/rewardGiven", async
   }
 });
 
+/** Staff passed the code on. Only for the to-do list: customers always see it on My coupons. */
+export const markCodeSent = createAsyncThunk("couponSales/codeSent", async (id, { rejectWithValue }) => {
+  try {
+    const patch = { codeSentAt: new Date().toISOString() };
+    await updateDoc(doc(db, "couponPurchases", id), patch);
+    return { id, patch };
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
 const couponSalesSlice = createSlice({
   name: "couponSales",
   initialState: { offers: [], offersLoaded: false, purchases: [], purchasesLoaded: false, mine: [], mineLoaded: false, processingId: null },
@@ -299,7 +310,7 @@ const couponSalesSlice = createSlice({
       .addCase(revokePurchase.rejected, (state) => {
         state.processingId = null;
       })
-      .addMatcher(isFulfilled(confirmPurchase, rejectPurchase, revokePurchase, markRewardGiven), (state, action) => {
+      .addMatcher(isFulfilled(confirmPurchase, rejectPurchase, revokePurchase, markRewardGiven, markCodeSent), (state, action) => {
         const { id, patch, offerId, soldCount } = action.payload;
         state.processingId = null;
         const purchase = state.purchases.find((p) => p.id === id);

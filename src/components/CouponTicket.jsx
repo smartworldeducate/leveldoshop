@@ -1,11 +1,11 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
-import { CalendarClock, Copy, Flame, Gift } from 'lucide-react'
+import { CalendarClock, Check, Copy, Flame, Gift, Star } from 'lucide-react'
 
 import OfferBuyButton from './OfferBuyButton'
 import useApplyCoupon from '../lib/useApplyCoupon'
 import { categoryLabel, formatMoney } from '../data/grocery'
-import { describeDiscount, describeTerms, discountStub } from '../data/coupons'
+import { describeTerms, discountStub, endsInDays, endsInLabel } from '../data/coupons'
 import { dayCountdown, formatRewardDay, offerLeft, offerStatus } from '../data/couponSales'
 
 const Stub = ({ coupon, tag }) => {
@@ -19,12 +19,19 @@ const Stub = ({ coupon, tag }) => {
   )
 }
 
-// The name often says it already ("20% off voucher"): no need to say it twice.
-const Gives = ({ coupon, title }) => {
-  const text = describeDiscount(coupon)
-  if (String(title || '').toLowerCase().includes(text.toLowerCase())) return null
-  return <p className="ticket__gives">{text}</p>
-}
+// The stub shows the discount, so this only adds what the stub can't: its cap.
+const Cap = ({ coupon }) =>
+  Number(coupon?.maxDiscount) > 0 ? <p className="ticket__gives">Up to {formatMoney(coupon.maxDiscount)} off</p> : null
+
+// Worth saying: it's the first thing people wonder about a code.
+const wholeShop = (coupon) => (coupon?.categorySlugs?.length ? [] : ['All aisles'])
+
+const Terms = ({ items }) =>
+  items.length > 0 && (
+    <ul className="ticket__terms">
+      {items.map((term) => <li key={term}><Check size={12} strokeWidth={3} aria-hidden="true" /> {term}</li>)}
+    </ul>
+  )
 
 // Where the ticket would tear: a dashed line between two punched notches.
 const Tear = () => <div className="ticket__tear" aria-hidden="true" />
@@ -38,36 +45,40 @@ const useTerms = (coupon) => {
  * A coupon on sale. `compact` is for Home, where the coupon page holds the small
  * print. `preview` is for the dashboard: it looks the same but does nothing.
  */
-export function OfferTicket({ offer, compact = false, preview = false }) {
+export function OfferTicket({ offer, compact = false, preview = false, popular = false }) {
   const terms = useTerms(offer)
   const soldOut = offerStatus(offer).key === 'sold_out'
   const left = offerLeft(offer)
   const when = dayCountdown(offer.rewardDay)
+  const fewLeft = !soldOut && left !== null && left <= 5
 
   return (
     <article className={`ticket${soldOut ? ' is-sold-out' : ''}`}>
       <Stub coupon={offer} tag="To buy" />
       <Tear />
-      <div className="ticket__body">
-        <h3>{offer.title || 'Your coupon name'}</h3>
-        <Gives coupon={offer} title={offer.title} />
-        {!compact && offer.description && <p>{offer.description}</p>}
-        {!compact && (
-          <ul className="ticket__terms">
-            {terms.map((term) => <li key={term}>{term}</li>)}
-            <li>{offer.validDays > 0 ? `Lasts ${offer.validDays} days` : 'No expiry'}</li>
-            <li>Works once</li>
-          </ul>
-        )}
-        {offer.rewardText && (
-          <p className="ticket__reward">
-            <Gift size={15} />
-            <span>Every buyer gets: {offer.rewardText}{offer.rewardDay ? `, on ${formatRewardDay(offer.rewardDay)}` : ''}{when ? ` (${when})` : ''}</span>
-          </p>
-        )}
-        {!soldOut && left !== null && left <= 5 && (
-          <p className="ticket__left"><Flame size={15} /> Only {left} left</p>
-        )}
+      <div className="ticket__body ticket__body--split">
+        <div className="ticket__info">
+          <div className="ticket__head">
+            <h3>{offer.title || 'Your coupon name'}</h3>
+            {popular && !soldOut && <span className="ticket__flag"><Star size={12} /> Popular</span>}
+            {fewLeft && <span className="ticket__flag ticket__flag--hot"><Flame size={12} /> Only {left} left</span>}
+          </div>
+          <Cap coupon={offer} />
+          {!compact && offer.description && <p>{offer.description}</p>}
+          {!compact && (
+            <Terms items={[...terms, ...wholeShop(offer), offer.validDays > 0 ? `Lasts ${offer.validDays} days` : 'No expiry', 'Works once']} />
+          )}
+          {offer.rewardText && (
+            <div className="ticket__reward">
+              <span className="ticket__reward-icon"><Gift size={16} /></span>
+              <p>
+                <small>Every buyer gets</small>
+                <strong>{offer.rewardText}</strong>
+                {offer.rewardDay && <small>on {formatRewardDay(offer.rewardDay)}{when ? ` (${when})` : ''}</small>}
+              </p>
+            </div>
+          )}
+        </div>
         <div className="ticket__foot">
           <div className="ticket__price">
             <small>You pay</small>
@@ -91,6 +102,7 @@ export function OfferTicket({ offer, compact = false, preview = false }) {
 export function FreeTicket({ coupon, code = coupon.code, compact = false, preview = false }) {
   const terms = useTerms(coupon)
   const apply = useApplyCoupon()
+  const ending = endsInDays(coupon)
   const Button = preview ? 'div' : 'button'
   const action = preview
     ? { 'aria-hidden': true }
@@ -100,23 +112,24 @@ export function FreeTicket({ coupon, code = coupon.code, compact = false, previe
     <article className="ticket ticket--free">
       <Stub coupon={coupon} tag="Free" />
       <Tear />
-      <div className="ticket__body">
-        <h3>{coupon.label || 'Discount code'}</h3>
-        <Gives coupon={coupon} title={coupon.label} />
-        {!compact && terms.length > 0 && (
-          <ul className="ticket__terms">
-            {terms.map((term) => <li key={term}>{term}</li>)}
-          </ul>
-        )}
-        {compact && coupon.endsAt && (
-          <p className="ticket__ends">
-            <CalendarClock size={15} />
-            Ends {new Date(coupon.endsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-          </p>
-        )}
+      <div className="ticket__body ticket__body--split">
+        <div className="ticket__info">
+          <div className="ticket__head">
+            <h3>{coupon.label || 'Discount code'}</h3>
+            {ending !== null && <span className="ticket__flag ticket__flag--hot"><CalendarClock size={12} /> {endsInLabel(ending)}</span>}
+          </div>
+          <Cap coupon={coupon} />
+          {!compact && <Terms items={[...terms, ...wholeShop(coupon)]} />}
+          {compact && coupon.endsAt && ending === null && (
+            <p className="ticket__ends">
+              <CalendarClock size={15} />
+              Ends {new Date(coupon.endsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </p>
+          )}
+        </div>
         <div className="ticket__foot">
           <div className="ticket__price">
-            <small>You pay</small>
+            <small>Price</small>
             <strong>Free</strong>
           </div>
           <Button className="offer-copy" {...action}>

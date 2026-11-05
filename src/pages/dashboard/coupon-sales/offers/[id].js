@@ -38,12 +38,14 @@ export default function OfferEditorPage() {
   const param = router.query.id;
   const isNew = param === "new";
   const existing = offers.find((o) => o.id === param);
+  const copyFrom = isNew ? router.query.from : null;
 
   const [form, setForm] = useState(EMPTY_OFFER);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [rewarding, setRewarding] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (!offersLoaded) dispatch(fetchOffers());
@@ -51,13 +53,19 @@ export default function OfferEditorPage() {
 
   useEffect(() => {
     if (ready || !router.isReady) return;
-    if (isNew) setReady(true);
-    else if (existing) {
-      setForm(toForm(existing));
-      setRewarding(Boolean(existing.rewardText));
+    if (copyFrom && !offersLoaded) return;
+    const source = copyFrom ? offers.find((o) => o.id === copyFrom) : existing;
+    if (isNew && !source) setReady(true);
+    else if (source) {
+      const start = toForm(source);
+      // A copy is a new coupon: its reward day may have passed, and buyers only count on the original's.
+      if (isNew) Object.assign(start, { title: `${source.title} copy`.slice(0, 60), rewardDay: "" });
+      setForm(start);
+      setRewarding(Boolean(start.rewardText));
+      setMoreOpen(Boolean(start.maxDiscount || start.minOrder || start.stock || start.categorySlugs.length));
       setReady(true);
     }
-  }, [ready, router.isReady, isNew, existing]);
+  }, [ready, router.isReady, isNew, existing, copyFrom, offersLoaded, offers]);
 
   const set = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -89,7 +97,7 @@ export default function OfferEditorPage() {
     try {
       await dispatch(saveOffer({ id: isNew ? null : existing.id, form })).unwrap();
       toast.success(isNew ? "Coupon created" : "Coupon saved");
-      router.push("/dashboard/coupon-sales");
+      router.push("/dashboard/coupon-sales?tab=offers");
     } catch (err) {
       toast.error(typeof err === "string" ? err : "Could not save the offer");
       setSaving(false);
@@ -97,7 +105,7 @@ export default function OfferEditorPage() {
   };
 
   const back = (
-    <Button variant="outline" size="sm" icon={ArrowLeft} href="/dashboard/coupon-sales">
+    <Button variant="outline" size="sm" icon={ArrowLeft} href="/dashboard/coupon-sales?tab=offers">
       Sell coupons
     </Button>
   );
@@ -171,7 +179,7 @@ export default function OfferEditorPage() {
           </Card>
 
           <Card>
-            <details open={Boolean(form.maxDiscount || form.minOrder || form.stock || form.categorySlugs.length) || undefined}>
+            <details open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
               <summary className="cursor-pointer text-base font-bold text-slate-800">More options (optional)</summary>
               <p className="mt-1 text-sm text-slate-400">Limit how much it takes off, where it works and how many you sell.</p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">

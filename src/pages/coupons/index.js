@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useDispatch, useSelector } from 'react-redux'
-import { Gift, LockKeyhole, TicketPercent } from 'lucide-react'
+import { ArrowRight, BadgeCheck, Gift, Globe2, LockKeyhole, TicketPercent } from 'lucide-react'
 
 import { FreeTicket, OfferTicket } from '../../components/CouponTicket'
 import HelpList from '../../components/HelpList'
@@ -14,15 +14,44 @@ import { fetchOffers } from '../../redux/couponSales/couponSalesSlice'
 import { fetchSiteCoupons } from '../../redux/coupons/couponsSlice'
 import { fetchDraws } from '../../redux/rewards/rewardsSlice'
 import { couponShopIsOpen, offerStatus } from '../../data/couponSales'
+import { formatMoney } from '../../data/grocery'
 import { discountStub } from '../../data/coupons'
 import { drawStatus, formatDrawDate } from '../../data/rewards'
 
 const HOW_TO_BUY = [
-  { title: 'Copy the code', note: 'It opens the payment page.' },
-  { title: 'Send the money', note: 'By any method we list.' },
-  { title: 'Upload your receipt', note: 'A screenshot or photo.' },
-  { title: 'Use your coupon', note: 'We check your payment, then send your code.' },
+  { title: 'Choose a coupon', note: 'Press Copy to buy. The payment page opens.' },
+  { title: 'Send the money', note: 'By any method we list for your country.' },
+  { title: 'Upload your receipt', note: 'A screenshot or photo is fine.' },
+  { title: 'Get your own code', note: 'We check your payment, then send it to you.' },
 ]
+
+const HERO_POINTS = [
+  { icon: BadgeCheck, text: 'A code made just for you' },
+  { icon: LockKeyhole, text: 'Your receipt stays private' },
+  { icon: Globe2, text: 'Pay the way that suits your country' },
+]
+
+// A coupon only counts as popular once a few people have really bought it.
+const POPULAR_FROM = 5
+
+/** The two best offers, drawn as real tickets in the header. Decoration: the list below has the details. */
+function HeroDeck({ front, back }) {
+  const Card = ({ item, className }) => (
+    <div className={`hero-deck__card ${className}`}>
+      <span>A-one Grocery</span>
+      <strong>{discountStub(item).big}</strong>
+      <small>OFF</small>
+      <i />
+      <em>{item.price > 0 ? `Yours for ${formatMoney(item.price)}` : 'Free code'}</em>
+    </div>
+  )
+  return (
+    <div className="hero-deck" aria-hidden="true">
+      {back && <Card item={back} className="is-back" />}
+      <Card item={front} className="is-front" />
+    </div>
+  )
+}
 
 export default function CouponShop() {
   const dispatch = useDispatch()
@@ -31,6 +60,7 @@ export default function CouponShop() {
   const settingsLoaded = useSelector((s) => s.settings.loaded)
   const free = useSelector((s) => s.coupons.site)
   const draws = useSelector((s) => s.rewards.draws)
+  const [view, setView] = useState('all')
 
   useEffect(() => {
     dispatch(fetchOffers())
@@ -38,11 +68,29 @@ export default function CouponShop() {
     dispatch(fetchDraws())
   }, [dispatch])
 
+  // Ones people can buy come first; sold out stays visible, at the end.
   const listed = couponShopIsOpen(shop)
-    ? offers.filter((o) => ['on_sale', 'sold_out'].includes(offerStatus(o).key))
+    ? offers
+        .filter((o) => ['on_sale', 'sold_out'].includes(offerStatus(o).key))
+        .sort((a, b) => Number(offerStatus(a).key === 'sold_out') - Number(offerStatus(b).key === 'sold_out'))
     : []
   const openDraw = draws.find((d) => drawStatus(d).key === 'open')
-  const best = listed.find((o) => offerStatus(o).key === 'on_sale') || free[0]
+  const buyable = listed.filter((o) => offerStatus(o).key === 'on_sale')
+  const [best, runnerUp] = [...buyable, ...free]
+  const topSeller = buyable.reduce((top, o) => ((o.soldCount || 0) > (top?.soldCount || 0) ? o : top), null)
+  const popularId = (topSeller?.soldCount || 0) >= POPULAR_FROM ? topSeller.id : null
+
+  const gifts = listed.filter((o) => o.rewardText)
+  const views = [
+    { key: 'all', label: 'All', count: listed.length + free.length },
+    { key: 'buy', label: 'To buy', count: listed.length },
+    { key: 'free', label: 'Free', count: free.length },
+    { key: 'gift', label: 'With a gift', count: gifts.length },
+  ].filter((v) => v.key === 'all' || v.count > 0)
+  // A choice only helps when there's more than one kind of thing to choose between.
+  const showViews = listed.length > 0 && (free.length > 0 || gifts.length > 0)
+  const shownOffers = view === 'gift' ? gifts : view === 'free' ? [] : listed
+  const shownFree = view === 'all' || view === 'free' ? free : []
 
   return (
     <>
@@ -56,15 +104,15 @@ export default function CouponShop() {
           kicker="Coupons"
           title="Save more on every basket"
           body="Buy a coupon or use a free code. Every coupon you buy gets its own code that works once."
-          actions={<Link href="/coupons/mine" className="shop-btn shop-btn--ghost">My coupons</Link>}
+          actions={
+            <>
+              {best && <a href="#coupon-list" className="shop-btn">See coupons <ArrowRight size={16} /></a>}
+              <Link href="/coupons/mine" className="shop-btn shop-btn--ghost">My coupons</Link>
+            </>
+          }
+          points={HERO_POINTS}
         >
-          {best && (
-            <div className="hero-ticket" aria-hidden="true">
-              <span>{best.price > 0 ? 'Coupon' : 'Free code'}</span>
-              <strong>{discountStub(best).big}</strong>
-              <small>OFF</small>
-            </div>
-          )}
+          {best && <HeroDeck front={best} back={runnerUp} />}
         </PageHero>
 
         {!settingsLoaded || !offersLoaded ? (
@@ -77,22 +125,39 @@ export default function CouponShop() {
             <Link href="/catalog" className="shop-btn">Shop groceries</Link>
           </div>
         ) : (
-          <div className={listed.length ? 'offers-split' : ''}>
+          <div id="coupon-list" className={`offers-anchor ${listed.length ? 'offers-split' : ''}`}>
             <div className="offers-split__main">
-              {listed.length > 0 && (
+              {showViews && (
+                <div className="filter-tabs offers-views" role="tablist" aria-label="Show coupons">
+                  {views.map(({ key, label, count }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={view === key}
+                      className={`filter-tabs__tab ${view === key ? 'is-active' : ''}`}
+                      onClick={() => setView(key)}
+                    >
+                      {label} ({count})
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {shownOffers.length > 0 && (
                 <section>
-                  <SectionHead kicker="To buy" title="Coupons to buy" note="Copy a code to start buying." />
+                  <SectionHead kicker="To buy" title="Coupons to buy" note="Press Copy to buy to start. You get your own code once we've checked your payment." />
                   <div className="ticket-list">
-                    {listed.map((offer) => <OfferTicket key={offer.id} offer={offer} />)}
+                    {shownOffers.map((offer) => <OfferTicket key={offer.id} offer={offer} popular={offer.id === popularId} />)}
                   </div>
                 </section>
               )}
 
-              {free.length > 0 && (
+              {shownFree.length > 0 && (
                 <section>
                   <SectionHead kicker="Free" title="Free codes" note="Nothing to pay. Copy one and use it in your basket." />
                   <div className="ticket-list">
-                    {free.map((coupon) => <FreeTicket key={coupon.code} coupon={coupon} />)}
+                    {shownFree.map((coupon) => <FreeTicket key={coupon.code} coupon={coupon} />)}
                   </div>
                 </section>
               )}
@@ -124,7 +189,7 @@ export default function CouponShop() {
 
         {openDraw && (
           <aside className="draw-banner">
-            <Gift size={26} />
+            <span className="draw-banner__icon"><Gift size={24} /></span>
             <div>
               <strong>Free reward draw: {openDraw.title}</strong>
               <p>Results on {formatDrawDate(openDraw.resultsAt)}. No purchase needed, and buying a coupon doesn't affect your chances.</p>

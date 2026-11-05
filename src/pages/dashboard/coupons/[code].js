@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
-import { ArrowLeft, Save, Shuffle, TicketPercent } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Shuffle, TicketPercent } from "lucide-react";
 
 import DashboardLayout, { dashboardGetLayout } from "@/components/dashboard/DashboardLayout";
 import Card, { CardHeader } from "@/components/dashboard/ui/Card";
@@ -17,6 +18,9 @@ import { FOCUS } from "@/components/dashboard/theme";
 import { createCoupon, fetchCoupons, updateCoupon } from "@/redux/coupons/couponsSlice";
 import { FreeTicket } from "@/components/CouponTicket";
 import { formatMoney } from "@/data/grocery";
+import { isCancelled } from "@/data/fulfilment";
+import { shortOrderId } from "@/data/returns";
+import { orderTotal, timeAgo } from "@/lib/analytics";
 import {
   COUPON_TYPES,
   EMPTY_COUPON,
@@ -48,6 +52,12 @@ const toForm = (coupon) => ({
   categorySlugs: coupon.categorySlugs || [],
 });
 
+/** A copy starts as a new code. Dates that have already gone would only make it expired. */
+const toCopy = (coupon) => {
+  const passed = coupon.endsAt && new Date(coupon.endsAt) <= new Date();
+  return { ...toForm(coupon), code: "", startsAt: passed ? "" : toLocalInput(coupon.startsAt), endsAt: passed ? "" : toLocalInput(coupon.endsAt) };
+};
+
 const randomCode = () =>
   `SAVE${Array.from({ length: 5 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("")}`;
 
@@ -60,10 +70,17 @@ export default function CouponEditorPage() {
   const param = router.query.code;
   const isNew = param === "new";
   const existing = coupons.find((c) => c.code === param);
+  const copyFrom = isNew ? router.query.from : null;
+  const allOrders = useSelector((s) => s.adminOrders.items);
+  const orders = useMemo(
+    () => allOrders.filter((o) => o.coupon?.code === param && !isCancelled(o)),
+    [allOrders, param]
+  );
 
   const [form, setForm] = useState(EMPTY_COUPON);
   const [errors, setErrors] = useState({});
   const [ready, setReady] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (!loaded) dispatch(fetchCoupons());
@@ -71,12 +88,16 @@ export default function CouponEditorPage() {
 
   useEffect(() => {
     if (ready || !router.isReady) return;
-    if (isNew) setReady(true);
-    else if (existing) {
-      setForm(toForm(existing));
+    if (copyFrom && !loaded) return;
+    const source = copyFrom ? coupons.find((c) => c.code === copyFrom && !c.purchaseId) : existing;
+    if (isNew && !source) setReady(true);
+    else if (source) {
+      const start = isNew ? toCopy(source) : toForm(source);
+      setForm(start);
+      setMoreOpen(Boolean(start.maxDiscount || start.minOrder || start.usageLimit || start.categorySlugs.length));
       setReady(true);
     }
-  }, [ready, router.isReady, isNew, existing]);
+  }, [ready, router.isReady, isNew, existing, copyFrom, loaded, coupons]);
 
   const set = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -135,12 +156,28 @@ export default function CouponEditorPage() {
     );
   }
 
+  // Someone paid for this code, so it can't be changed here. Cancelling it has its own steps.
+  if (existing?.purchaseId) {
+    return (
+      <DashboardLayout title={existing.code} eyebrow="Discount codes" actions={back}>
+        <Card>
+          <EmptyState icon={TicketPercent} title="A customer paid for this code" body="It can't be edited or deleted here. If you've refunded them, cancel the code on their purchase." />
+          <div className="mt-4 flex justify-center">
+            <Button icon={ArrowRight} href={`/dashboard/coupon-sales/purchases/${existing.purchaseId}`}>Open purchase</Button>
+          </div>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+
   const preview = { ...couponFields(form), usedCount: existing?.usedCount || 0 };
   const hasValue = Number(form.value) > 0;
   const status = couponStatus(preview);
   const code = isNew ? normalizeCode(form.code) : existing?.code;
   const sample = Math.max(50, preview.minOrder);
   const sampleOff = computeDiscount({ ...preview, categorySlugs: [] }, [{ price: sample, quantity: 1 }]).amount;
+  const given = orders.reduce((sum, o) => sum + (Number(o.discount) || 0), 0);
+  const sales = orders.reduce((sum, o) => sum + orderTotal(o), 0);
   const endIn = (days) => set("endsAt", toLocalInput(new Date(Date.now() + days * 86_400_000).toISOString()));
 
   return (
@@ -235,7 +272,7 @@ export default function CouponEditorPage() {
           </Card>
 
           <Card>
-            <details open={Boolean(form.maxDiscount || form.minOrder || form.usageLimit || form.categorySlugs.length) || undefined}>
+            <details open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
               <summary className="cursor-pointer text-base font-bold text-slate-800">More options (optional)</summary>
               <p className="mt-1 text-sm text-slate-400">Limit how much it takes off, how often it's used and where it works.</p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -314,6 +351,37 @@ export default function CouponEditorPage() {
               {isNew ? "Create code" : "Save changes"}
             </Button>
           </Card>
+
+          {!isNew && (
+            <Card>
+              <CardHeader title="How it's doing" subtitle="Cancelled orders aren't counted." />
+              <dl className="mt-4 grid grid-cols-3 gap-3">
+                <div>
+                  <dt className="text-xs text-slate-400">Orders</dt>
+                  <dd className="mt-0.5 text-lg font-bold text-slate-800">{orders.length}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-400">Discount given</dt>
+                  <dd className="mt-0.5 text-lg font-bold text-slate-800">{formatMoney(given)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-400">Order sales</dt>
+                  <dd className="mt-0.5 text-lg font-bold text-slate-800">{formatMoney(sales)}</dd>
+                </div>
+              </dl>
+              {orders.length > 0 && (
+                <ul className="mt-4 flex flex-col divide-y divide-slate-100 border-t border-slate-100">
+                  {orders.slice(0, 5).map((o) => (
+                    <li key={o.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <Link href={`/dashboard/orders/${o.id}`} className="font-semibold text-[#4267B2] underline">{shortOrderId(o.id)}</Link>
+                      <span className="min-w-0 flex-1 truncate text-slate-500">{o.user?.name || "Guest"}</span>
+                      <span className="shrink-0 text-xs text-slate-400">{timeAgo(o.createdAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
         </div>
       </form>
     </DashboardLayout>

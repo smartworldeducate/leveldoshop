@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
-import { AlertTriangle, CheckCircle2, Clock, Copy, CreditCard, Download, ExternalLink, Eye, FileCheck2, Gift, MessageCircle, Pencil, Plus, ShoppingBag, Trash2, Wallet } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Copy, CopyPlus, CreditCard, Download, ExternalLink, Eye, FileCheck2, Gift, MessageCircle, Pencil, Plus, ShoppingBag, Trash2, Wallet } from "lucide-react";
 
 import DashboardLayout, { dashboardGetLayout } from "@/components/dashboard/DashboardLayout";
 import Card, { CardHeader } from "@/components/dashboard/ui/Card";
@@ -23,6 +24,7 @@ import {
   saveOffer,
   fetchOffers,
   fetchPurchases,
+  markCodeSent,
 } from "@/redux/couponSales/couponSalesSlice";
 import { timeAgo } from "@/lib/analytics";
 import { formatMoney } from "@/data/grocery";
@@ -30,8 +32,15 @@ import { describeDiscount, discountStub } from "@/data/coupons";
 import { whatsappNumber } from "@/data/notifications";
 import {
   PURCHASE_STATUS,
+  codeToSend,
+  dayCountdown,
   duplicateReferences,
   couponShopIsOpen,
+  longestWaiting,
+  offerTotals,
+  purchasesCsv,
+  rewardOverdue,
+  waitingTooLong,
   formatRewardDay,
   methodLacksAccount,
   offerLeft,
@@ -45,14 +54,38 @@ import {
   rewardMessage,
 } from "@/data/couponSales";
 
-function Purchases() {
+const LISTS = {
+  pending: (p) => p.status === "pending",
+  tosend: codeToSend,
+  confirmed: (p) => p.status === "confirmed",
+  rejected: (p) => p.status === "rejected",
+  revoked: (p) => p.status === "revoked",
+  all: () => true,
+};
+
+function downloadCsv(text, name) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function Purchases({ filter, onFilter }) {
+  const dispatch = useDispatch();
   const { purchases, purchasesLoaded } = useSelector((s) => s.couponSales);
-  const [filter, setFilter] = useState("pending");
   const [query, setQuery] = useState("");
 
   const duplicates = useMemo(() => duplicateReferences(purchases), [purchases]);
-  const count = (status) => purchases.filter((p) => p.status === status).length;
-  const rows = purchases.filter((p) => (filter === "all" || p.status === filter) && purchaseMatches(p, query));
+  const count = (list) => purchases.filter(LISTS[list]).length;
+  const rows = purchases.filter((p) => LISTS[filter](p) && purchaseMatches(p, query));
+  // The people who've waited longest get checked first.
+  if (filter === "pending") rows.sort(longestWaiting);
+
+  const sent = (p) => {
+    if (!p.codeSentAt) dispatch(markCodeSent(p.id));
+  };
 
   const whatsappFor = (p) => {
     const number = whatsappNumber(p.buyer?.phone);
@@ -88,7 +121,10 @@ function Purchases() {
       render: (p) => (
         <div className="min-w-0">
           <p className="truncate font-semibold text-slate-700">{p.offerTitle}</p>
-          <p className="text-xs text-slate-400">{timeAgo(p.createdAt)}</p>
+          <p className={`text-xs ${waitingTooLong(p) ? "font-semibold text-rose-600" : "text-slate-400"}`}>
+            {waitingTooLong(p) && <AlertTriangle className="mr-1 inline h-3 w-3" />}
+            {timeAgo(p.createdAt)}
+          </p>
         </div>
       ),
     },
@@ -146,6 +182,9 @@ function Purchases() {
               {p.couponCode} <Copy className="h-3 w-3" />
             </button>
           )}
+          {p.status === "confirmed" && (
+            <p className="text-xs text-slate-400">{p.codeSentAt ? `Sent ${timeAgo(p.codeSentAt)}` : "Not sent yet"}</p>
+          )}
           {p.rejectNote && <p className="text-xs text-slate-400">“{p.rejectNote}”</p>}
         </div>
       ),
@@ -161,9 +200,12 @@ function Purchases() {
               href={whatsappFor(p)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              onClick={() => sent(p)}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
+                p.codeSentAt ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-emerald-600 text-white hover:bg-emerald-700"
+              }`}
             >
-              <MessageCircle className="h-4 w-4" /> Send code
+              <MessageCircle className="h-4 w-4" /> {p.codeSentAt ? "Send again" : "Send code"}
             </a>
           )}
           <Button
@@ -184,16 +226,28 @@ function Purchases() {
       <Toolbar>
         <SegmentedControl
           value={filter}
-          onChange={setFilter}
+          onChange={onFilter}
           options={[
             { value: "pending", label: "To check", count: count("pending") },
+            { value: "tosend", label: "Code to send", count: count("tosend") },
             { value: "confirmed", label: "Confirmed", count: count("confirmed") },
             { value: "rejected", label: "Rejected", count: count("rejected") },
             { value: "revoked", label: "Cancelled", count: count("revoked") },
             { value: "all", label: "All", count: purchases.length },
           ]}
         />
-        <SearchInput value={query} onChange={setQuery} placeholder="Search name, phone or code" className="sm:max-w-xs" />
+        <div className="flex items-center gap-2 sm:max-w-sm">
+          <SearchInput value={query} onChange={setQuery} placeholder="Search name, phone or code" />
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Download}
+            disabled={!rows.length}
+            onClick={() => downloadCsv(purchasesCsv(rows), `coupon-payments-${filter}.csv`)}
+          >
+            Download
+          </Button>
+        </div>
       </Toolbar>
       <div className="mt-5">
         <DataTable
@@ -226,15 +280,7 @@ function RewardDay() {
   const waiting = onDay.filter((p) => !p.rewardGivenAt);
   const rows = filter === "waiting" ? waiting : filter === "given" ? onDay.filter((p) => p.rewardGivenAt) : onDay;
 
-  const download = () => {
-    const blob = new Blob([rewardListCsv(onDay)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `reward-day-${day || "all"}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  const download = () => downloadCsv(rewardListCsv(onDay), `reward-day-${day || "all"}.csv`);
 
   const toggle = async (p, given) => {
     try {
@@ -258,7 +304,16 @@ function RewardDay() {
     },
     { key: "reward", label: "Reward", render: (p) => <span className="text-slate-700">{p.reward.text}</span> },
     { key: "offer", label: "Bought", render: (p) => <span className="text-slate-500">{p.offerTitle}</span> },
-    { key: "day", label: "Reward day", render: (p) => <span className="font-semibold text-slate-700">{formatRewardDay(p.reward.day)}</span> },
+    { key: "day", label: "Reward day", render: (p) => (
+        <div>
+          <p className="font-semibold text-slate-700">{formatRewardDay(p.reward.day)}</p>
+          {rewardOverdue(p) ? (
+            <p className="text-xs font-semibold text-rose-600">Day has passed</p>
+          ) : (
+            !p.rewardGivenAt && <p className="text-xs text-slate-400">{dayCountdown(p.reward.day)}</p>
+          )}
+        </div>
+      ) },
     {
       key: "state",
       label: "Status",
@@ -347,7 +402,7 @@ function RewardDay() {
 
 function Offers({ onDelete }) {
   const dispatch = useDispatch();
-  const { offers, offersLoaded } = useSelector((s) => s.couponSales);
+  const { offers, offersLoaded, purchases } = useSelector((s) => s.couponSales);
 
   const toggle = async (offer, enabled) => {
     try {
@@ -378,6 +433,8 @@ function Offers({ onDelete }) {
           {offers.map((o) => {
             const left = offerLeft(o);
             const sold = o.soldCount || 0;
+            const { waiting, earned } = offerTotals(o.id, purchases);
+            const onSale = offerStatus(o).key === "on_sale";
             return (
               <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-[#F6F8FC] p-4">
                 <div className="flex items-start gap-3">
@@ -395,7 +452,10 @@ function Offers({ onDelete }) {
 
                 <div>
                   <div className="flex justify-between text-xs text-slate-500">
-                    <span>{sold} sold</span>
+                    <span>
+                      {sold} sold · {formatMoney(earned)} earned
+                      {waiting > 0 && <strong className="text-amber-700"> · {waiting} to check</strong>}
+                    </span>
                     <span>{left === null ? "No limit" : `${left} left`}</span>
                   </div>
                   {o.stock > 0 && (
@@ -417,8 +477,11 @@ function Offers({ onDelete }) {
                     On sale
                   </span>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" aria-label={`See ${o.title} on the website`} href="/coupons" target="_blank">
+                    <Button variant="ghost" size="icon" aria-label={`See ${o.title} on the website`} href={onSale ? `/coupons/${o.id}` : "/coupons"} target="_blank">
                       <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Copy into a new coupon" aria-label={`Copy ${o.title} into a new coupon`} href={`/dashboard/coupon-sales/offers/new?from=${o.id}`}>
+                      <CopyPlus className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" aria-label={`Edit ${o.title}`} href={`/dashboard/coupon-sales/offers/${o.id}`}>
                       <Pencil className="h-4 w-4" />
@@ -480,6 +543,8 @@ function SetupGuide({ onOpen }) {
   );
 }
 
+const TABS = ["purchases", "offers", "reward", "payment"];
+
 export default function CouponSalesPage() {
   const dispatch = useDispatch();
   const { purchases, offers } = useSelector((s) => s.couponSales);
@@ -488,9 +553,19 @@ export default function CouponSalesPage() {
   // With no usable method at all, the setup guide already says so.
   const methods = paymentMethods(shop);
   const lacking = methods.some(methodLacksAccount) && !methods.every(methodLacksAccount);
-  const [tab, setTab] = useState("purchases");
+
+  // In the address, so coming back from a coupon or a payment returns to the same place.
+  const router = useRouter();
+  const tab = TABS.includes(router.query.tab) ? router.query.tab : "purchases";
+  const show = LISTS[router.query.show] ? router.query.show : "pending";
+  const setQuery = (next) => {
+    router.replace({ pathname: router.pathname, query: next }, undefined, { shallow: true, scroll: false });
+  };
+  const setTab = (value) => setQuery(value === "purchases" ? {} : { tab: value });
+  const setShow = (value) => setQuery(value === "pending" ? {} : { show: value });
 
   const [deleting, setDeleting] = useState(null);
+  const deletingWaiting = deleting ? offerTotals(deleting.id, purchases).waiting : 0;
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -500,6 +575,7 @@ export default function CouponSalesPage() {
 
   const confirmed = purchases.filter((p) => p.status === "confirmed");
   const pending = purchases.filter((p) => p.status === "pending");
+  const onSaleCount = offers.filter((o) => offerStatus(o).key === "on_sale").length;
   const sales = confirmed.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
 
   const act = async (thunk, message, done) => {
@@ -519,7 +595,7 @@ export default function CouponSalesPage() {
     <DashboardLayout title="Sell coupons" eyebrow="Storefront">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <StatTile icon={Clock} label="Payments to check" value={pending.length} accent="#F59E0B" />
-        <StatTile icon={CheckCircle2} label="Coupons sold" value={confirmed.length} hint={`${offers.length} on offer`} accent={FRESH} />
+        <StatTile icon={CheckCircle2} label="Coupons sold" value={confirmed.length} hint={`${onSaleCount} on sale now`} accent={FRESH} />
         <StatTile icon={Wallet} label="Money from coupons" value={formatMoney(sales)} hint="Not included in Reports revenue" accent={BRAND} />
       </div>
 
@@ -544,14 +620,14 @@ export default function CouponSalesPage() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: "purchases", label: "Payments to check", count: pending.length },
-          { value: "offers", label: "Coupons on sale", count: offers.length },
+          { value: "purchases", label: "Payments", count: pending.length },
+          { value: "offers", label: "Coupons", count: offers.length },
           { value: "reward", label: "Reward day", count: rewardList(purchases).filter((p) => !p.rewardGivenAt).length },
           { value: "payment", label: "Payment methods" },
         ]}
       />
 
-      {tab === "purchases" && <Purchases />}
+      {tab === "purchases" && <Purchases filter={show} onFilter={setShow} />}
       {tab === "offers" && <Offers onDelete={setDeleting} />}
       {tab === "reward" && <RewardDay />}
       {tab === "payment" && <PaymentMethods />}
@@ -559,17 +635,28 @@ export default function CouponSalesPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onClose={() => setDeleting(null)}
-        onConfirm={() => act(deleteOffer(deleting.id), "Offer deleted", () => setDeleting(null))}
+        onConfirm={() =>
+          deletingWaiting > 0
+            ? (setDeleting(null), setQuery({}))
+            : act(deleteOffer(deleting.id), "Offer deleted", () => setDeleting(null))
+        }
         loading={busy}
-        icon={Trash2}
-        title="Delete this offer?"
-        confirmLabel="Delete offer"
+        icon={deletingWaiting > 0 ? AlertTriangle : Trash2}
+        tone={deletingWaiting > 0 ? "warning" : "danger"}
+        title={deletingWaiting > 0 ? "Check its payments first" : "Delete this offer?"}
+        description={
+          deletingWaiting > 0
+            ? `${deletingWaiting} ${deletingWaiting === 1 ? "customer has" : "customers have"} paid for this and ${deletingWaiting === 1 ? "is" : "are"} waiting. Once it's deleted, no code can be issued for them.`
+            : undefined
+        }
+        confirmLabel={deletingWaiting > 0 ? "See payments" : "Delete offer"}
+        irreversible={deletingWaiting === 0}
         preview={deleting && { title: deleting.title, meta: formatMoney(deleting.price) }}
-        consequences={[
-          "Customers can't buy it any more. To pause it instead, switch it off.",
-          "Codes already sold keep working.",
-          "Purchases still waiting on this offer can no longer be confirmed, so reject and refund them.",
-        ]}
+        consequences={
+          deletingWaiting > 0
+            ? ["To stop new sales now, switch it off instead."]
+            : ["Customers can't buy it any more. To pause it instead, switch it off.", "Codes already sold keep working."]
+        }
       />
     </DashboardLayout>
   );

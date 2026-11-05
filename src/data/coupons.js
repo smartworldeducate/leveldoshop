@@ -55,6 +55,17 @@ export function couponStatus(coupon, now = new Date()) {
   return { key: "active", label: "Active", tone: "success" };
 }
 
+/** Days left on a live code that ends within `within` days, otherwise null. */
+export function endsInDays(coupon, now = new Date(), within = 7) {
+  if (!coupon?.endsAt || couponStatus(coupon, now).key !== "active") return null;
+  const days = Math.ceil((new Date(coupon.endsAt) - now) / 86_400_000);
+  return days <= within ? days : null;
+}
+
+/** "ends today", "ends tomorrow", "ends in 3 days". */
+export const endsInLabel = (days) =>
+  days <= 0 ? "Ends today" : days === 1 ? "Ends tomorrow" : `Ends in ${days} days`;
+
 /**
  * The discount for a basket, as cents-exact money per line so it always adds up.
  * `lines` are `{ categorySlug, price, quantity }`.

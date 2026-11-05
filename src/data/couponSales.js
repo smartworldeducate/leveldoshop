@@ -285,13 +285,67 @@ export function purchaseMatches(purchase, term) {
     .some((value) => String(value || "").toLowerCase().includes(text));
 }
 
+const createdSeconds = (p) => p.createdAt?.seconds ?? new Date(p.createdAt || 0).getTime() / 1000;
+
+/** Who has waited longest comes first. */
+export const longestWaiting = (a, b) => createdSeconds(a) - createdSeconds(b);
+
 /** Who has waited longest, skipping the purchase just dealt with. */
 export function nextToCheck(purchases = [], exceptId) {
-  const seconds = (p) => p.createdAt?.seconds ?? new Date(p.createdAt || 0).getTime() / 1000;
   return purchases
     .filter((p) => p.status === "pending" && p.id !== exceptId)
-    .sort((a, b) => seconds(a) - seconds(b))[0] || null;
+    .sort(longestWaiting)[0] || null;
 }
+
+/** Waiting more than a day for someone to check their payment. */
+export const waitingTooLong = (purchase, now = new Date()) =>
+  purchase.status === "pending" && now.getTime() / 1000 - createdSeconds(purchase) > 86_400;
+
+/** Confirmed, but nobody has passed the code on yet. */
+export const codeToSend = (purchase) => purchase.status === "confirmed" && !purchase.codeSentAt;
+
+/** Which list on the Payments tab a purchase belongs in. */
+export const purchaseList = (purchase) => (codeToSend(purchase) ? "tosend" : purchase.status);
+
+/** Tap to fill in a reason. Customers read these on their My coupons page. */
+export const REJECT_REASONS = [
+  "We didn't receive this payment.",
+  "The receipt isn't clear enough to read.",
+  "The amount sent doesn't match the price.",
+  "This transaction ID has already been used.",
+];
+
+/** How this customer's other purchases went, so a repeat problem stands out. */
+export function buyerHistory(purchases = [], purchase) {
+  const others = purchases.filter((p) => p.id !== purchase.id && p.buyer?.uid && p.buyer.uid === purchase.buyer?.uid);
+  return {
+    confirmed: others.filter((p) => p.status === "confirmed").length,
+    rejected: others.filter((p) => p.status === "rejected").length,
+    total: others.length,
+  };
+}
+
+/** What one coupon has brought in, and how many of its payments still need checking. */
+export function offerTotals(offerId, purchases = []) {
+  const own = purchases.filter((p) => p.offerId === offerId);
+  return {
+    waiting: own.filter((p) => p.status === "pending").length,
+    earned: own.filter((p) => p.status === "confirmed").reduce((sum, p) => sum + (Number(p.price) || 0), 0),
+  };
+}
+
+/** Has a paid code been spent? Reads the code itself, because that's what checkout counts. */
+export function soldCodeState(coupon, now = new Date()) {
+  if (!coupon) return { key: "missing", label: "Code not found", tone: "danger" };
+  if ((coupon.usedCount || 0) > 0) return { key: "used", label: "Used", tone: "success" };
+  if (coupon.enabled === false) return { key: "off", label: "Switched off", tone: "neutral" };
+  if (coupon.endsAt && now > new Date(coupon.endsAt)) return { key: "expired", label: "Expired, not used", tone: "warning" };
+  return { key: "unused", label: "Not used yet", tone: "info" };
+}
+
+/** Reward day has gone and this buyer still hasn't had their reward. */
+export const rewardOverdue = (purchase, now = new Date()) =>
+  !purchase.rewardGivenAt && String(purchase.reward?.day || "") < todayKey(now);
 
 /** Buyers on the reward-day list: confirmed purchases that carry a reward, soonest first. */
 export const rewardList = (purchases = []) =>
@@ -329,6 +383,22 @@ export function rewardListCsv(list = []) {
     p.rewardGivenAt ? "Given" : "To give",
   ]);
   return toCsv([["Buyer", "Phone", "Reward", "Bought", "Reward day", "Status"], ...rows]);
+}
+
+export function purchasesCsv(purchases = []) {
+  const rows = purchases.map((p) => [
+    p.token,
+    p.buyer?.name,
+    p.buyer?.phone,
+    p.buyer?.email,
+    p.offerTitle,
+    p.price,
+    p.paymentMethod,
+    p.reference,
+    PURCHASE_STATUS[p.status]?.label || p.status,
+    p.couponCode,
+  ]);
+  return toCsv([["Token", "Customer", "Phone", "Email", "Coupon", "Amount", "Paid by", "Transaction ID", "Status", "Code"], ...rows]);
 }
 
 export function rewardMessage(purchase) {
@@ -399,6 +469,17 @@ export function receivedMessage(purchase, { checkTime, draw, drawDate } = {}) {
     lines.push(`Separately, our free draw "${draw.title}" has results on ${drawDate}. Anyone can enter for free, and buying a coupon doesn't affect your chances.`);
   }
   return lines.join("\n");
+}
+
+/** Rejecting only shows on their page, so staff can also say it directly. */
+export function rejectedMessage(purchase) {
+  const name = purchase.buyer?.name?.trim() || "there";
+  return `Hello ${name}, we couldn't confirm your payment for "${purchase.offerTitle}" (token ${purchase.token}).\nReason: ${purchase.rejectNote}\nPlease reply here if you think this is a mistake.`;
+}
+
+export function revokedMessage(purchase) {
+  const name = purchase.buyer?.name?.trim() || "there";
+  return `Hello ${name}, your coupon "${purchase.offerTitle}" (token ${purchase.token}) has been cancelled and its code no longer works. Please reply here if you have any questions.`;
 }
 
 export function purchaseMessage(purchase, ordersUrl) {

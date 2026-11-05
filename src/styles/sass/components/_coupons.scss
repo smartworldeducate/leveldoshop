@@ -26,6 +26,8 @@
     --ticket-ink: #{$main-color};
     --ticket-notch: #{$app-bg};
 
+    // Lays itself out by its own width: it sits in lists, grids and dashboard previews.
+    container-type: inline-size;
     display: flex;
     border-radius: 20px;
     background: $main-bg;
@@ -60,7 +62,9 @@
         align-items: center;
         justify-content: center;
         padding: 18px 10px;
-        background: linear-gradient(160deg, var(--ticket-from), var(--ticket-to));
+        background:
+            radial-gradient(90px 90px at 100% 0%, rgba(#fff, 0.2), transparent 70%),
+            linear-gradient(160deg, var(--ticket-from), var(--ticket-to));
         color: $txt-white;
         text-align: center;
 
@@ -153,7 +157,61 @@
         }
     }
 
-    &__body > &__gives {
+    // Details on one side, price and button on the other once there's room.
+    &__body--split {
+        gap: 12px;
+        padding: 0;
+    }
+
+    &__info {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        padding: 20px 24px 4px;
+
+        @include mobile {
+            padding: 15px 14px 2px;
+        }
+
+        > p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: $txt-second-color;
+        }
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+
+        h3 {
+            margin-right: auto;
+        }
+    }
+
+    &__flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: $radius-pill;
+        background: #fdf3d7;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #8a5700;
+        white-space: nowrap;
+
+        &--hot {
+            background: #fde8ec;
+            color: #c02642;
+        }
+    }
+
+    &__info > &__gives {
         font-size: 14px;
         font-weight: 700;
         color: var(--ticket-ink);
@@ -162,52 +220,71 @@
     &__terms {
         display: flex;
         flex-wrap: wrap;
-        gap: 2px 14px;
+        gap: 6px;
 
         li {
-            position: relative;
-            padding-left: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px 4px 8px;
+            border-radius: $radius-pill;
+            background: #f2f5fb;
             font-size: 12.5px;
-            color: $txt-second-color;
+            font-weight: 500;
+            color: #5c6680;
 
-            &::before {
-                content: "";
-                position: absolute;
-                top: 7px;
-                left: 0;
-                width: 5px;
-                height: 5px;
-                border-radius: 50%;
-                background: var(--ticket-ink);
-                opacity: 0.55;
+            svg {
+                color: var(--ticket-ink);
             }
         }
     }
 
-    &__body > &__reward,
-    &__body > &__left,
-    &__body > &__ends {
+    &__info > &__ends {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 7px;
         font-size: 13px;
         font-weight: 600;
+    }
 
-        svg {
-            flex-shrink: 0;
-            margin-top: 2px;
+    &__reward {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 10px 13px;
+        border-radius: 14px;
+        background: linear-gradient(120deg, #fef8e7, #fdf0d2);
+        color: #6e4600;
+
+        p {
+            min-width: 0;
+        }
+
+        small {
+            display: block;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        strong {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
         }
     }
 
-    &__body > &__reward {
-        padding: 8px 11px;
-        border-radius: 10px;
-        background: #fef8e7;
-        color: #8a5700;
-    }
-
-    &__body > &__left {
-        color: #d9344f;
+    &__reward-icon {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(#fff, 0.8);
+        color: #a86a00;
     }
 
     &__foot {
@@ -217,8 +294,51 @@
         justify-content: space-between;
         gap: 10px 14px;
         margin-top: auto;
-        padding-top: 10px;
+        padding: 12px 24px 18px;
         border-top: 1px solid $app-bg;
+
+        @include mobile {
+            padding: 12px 14px 15px;
+        }
+    }
+
+    // Wide enough to read like a boarding pass: stub, details, then what to do.
+    @container (min-width: 640px) {
+        &__body--split {
+            flex-direction: row;
+            gap: 0;
+        }
+
+        // A short ticket shouldn't have its words stuck to the top.
+        &__info {
+            justify-content: center;
+            padding: 22px 24px;
+        }
+
+        &__foot {
+            flex: 0 0 216px;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 0;
+            padding: 20px;
+            border-top: 0;
+            border-left: 2px dashed rgba($main-color, 0.14);
+            background: #f8fafe;
+        }
+
+        &__price {
+            text-align: center;
+        }
+
+        .offer-copy {
+            width: 100%;
+        }
+
+        &__soldout {
+            text-align: center;
+        }
     }
 
     &__price {
@@ -229,9 +349,10 @@
         }
 
         strong {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
             line-height: 1.1;
+            letter-spacing: -0.01em;
             color: $txt-main-color;
         }
     }
@@ -304,8 +425,12 @@
         font-size: 24px;
     }
 
-    .ticket__body {
-        padding: 14px;
+    .ticket__info {
+        padding: 14px 14px 2px;
+    }
+
+    .ticket__foot {
+        padding: 10px 14px 14px;
     }
 }
 
@@ -378,7 +503,35 @@
     }
 
     &__actions {
-        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+
+        .shop-btn svg {
+            margin-left: 4px;
+        }
+    }
+
+    &__points {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        margin-top: 22px;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #5c6680;
+        }
+
+        svg {
+            flex-shrink: 0;
+            color: $main-color;
+        }
     }
 
     &__side {
@@ -417,43 +570,99 @@
     }
 }
 
-// The best offer, drawn large in the header.
-.hero-ticket {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 200px;
-    padding: 22px 18px 20px;
-    border-radius: 22px;
-    background: linear-gradient(160deg, $main-light, $main-color);
-    color: $txt-white;
-    box-shadow: 0 30px 50px -26px rgba($shadow-color, 0.9);
-    transform: rotate(-4deg);
+// The best offers, drawn as real tickets in the header.
+.hero-deck {
+    position: relative;
+    width: 300px;
+    height: 262px;
 
     @include tablet {
         display: none;
     }
 
-    span {
-        padding: 3px 11px;
-        border-radius: $radius-pill;
-        background: rgba(#fff, 0.2);
-        font-size: 12px;
-        font-weight: 700;
-    }
+    &__card {
+        position: absolute;
+        top: 8px;
+        left: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 206px;
+        padding: 18px 16px 16px;
+        border-radius: 22px;
+        background:
+            radial-gradient(160px 120px at 90% 0%, rgba(#fff, 0.22), transparent 70%),
+            linear-gradient(160deg, $main-light, $main-dark);
+        color: $txt-white;
+        box-shadow: 0 30px 50px -26px rgba($shadow-color, 0.9);
 
-    strong {
-        margin-top: 10px;
-        font-size: 56px;
-        font-weight: 800;
-        line-height: 1;
-    }
+        &.is-front {
+            z-index: 1;
+            transform: rotate(-4deg);
+        }
 
-    small {
-        margin-top: 4px;
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 0.22em;
+        &.is-back {
+            transform: translate(50px, 8px) rotate(7deg) scale(0.92);
+            background: linear-gradient(160deg, #fbe3b4, #eeb44f);
+            color: #4a2f00;
+            box-shadow: 0 24px 40px -28px rgba(#8a5700, 0.8);
+        }
+
+        span {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        strong {
+            margin-top: 10px;
+            font-size: 58px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        small {
+            margin-top: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.26em;
+        }
+
+        // A tear across the ticket, with a notch at each end.
+        i {
+            position: relative;
+            width: calc(100% + 32px);
+            margin: 14px 0 12px;
+            border-top: 2px dashed rgba(#fff, 0.45);
+
+            &::before,
+            &::after {
+                content: "";
+                position: absolute;
+                top: -10px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #eef3fc;
+            }
+
+            &::before {
+                left: -9px;
+            }
+
+            &::after {
+                right: -9px;
+            }
+        }
+
+        em {
+            font-size: 13.5px;
+            font-style: normal;
+            font-weight: 700;
+        }
     }
 }
 
@@ -484,20 +693,68 @@
         color: #9a6200;
     }
 
+    > div {
+        flex: 1;
+        min-width: 0;
+    }
+
     strong {
-        display: block;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 8px;
         font-size: 15px;
         font-weight: 700;
         color: $txt-main-color;
     }
 
+    em {
+        padding: 2px 8px;
+        border-radius: $radius-pill;
+        background: $main-soft;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 700;
+        color: $main-dark;
+    }
+
     small {
         display: block;
-        margin-top: 1px;
+        margin-top: 3px;
         font-size: 13px;
         line-height: 1.4;
-        color: $txt-second-color;
+        color: #6f7890;
     }
+
+    &__arrow {
+        flex-shrink: 0;
+        color: $main-color;
+        transition: transform 0.15s ease;
+    }
+
+    &:is(a):hover &__arrow {
+        transform: translateX(3px);
+    }
+}
+
+// Clear of the fixed header when a hero button jumps here.
+.offers-anchor {
+    scroll-margin-top: 100px;
+}
+
+.offers-views {
+    align-self: flex-start;
+    max-width: 100%;
+    margin-bottom: 0;
+
+    .filter-tabs__tab {
+        font-size: 13.5px;
+    }
+}
+
+#free-draw,
+#gift-coupons {
+    scroll-margin-top: 100px;
 }
 
 // Tickets beside a short "how it works", so one ticket doesn't leave a bare page.
@@ -524,6 +781,17 @@
     border-radius: 20px;
     background: $main-bg;
     border: 1px solid rgba($main-color, 0.08);
+    box-shadow: 0 22px 44px -36px rgba($shadow-color, 0.7);
+
+    // Stays in view beside a long list, instead of leaving a bare column.
+    .offers-split > & {
+        position: sticky;
+        top: 94px;
+
+        @include tablet {
+            position: static;
+        }
+    }
 
     h2 {
         font-size: 16px;
@@ -616,11 +884,19 @@
     gap: 14px;
     padding: 18px 22px;
     border-radius: 20px;
-    background: #fef8e7;
+    border: 1px solid rgba(#a86a00, 0.14);
+    background: linear-gradient(110deg, #fef8e7, #fdeecb);
     color: $txt-main-color;
 
-    > svg {
+    &__icon {
+        display: flex;
         flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: rgba(#fff, 0.85);
         color: #a86a00;
     }
 
@@ -918,9 +1194,20 @@
 }
 
 .rewards-signin {
-    margin-top: -14px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(#fff, 0.7);
+    border: 1px solid rgba($main-color, 0.08);
     font-size: 14px;
-    color: $txt-second-color;
+    color: #5c6680;
+
+    svg {
+        flex-shrink: 0;
+        color: $main-color;
+    }
 
     a {
         font-weight: 700;
@@ -1168,7 +1455,7 @@
 
 .my-rewards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 16px;
 
     @include mobile {
@@ -1181,8 +1468,9 @@
         gap: 16px;
         padding: 16px 18px;
         border-radius: $radius;
-        background: $main-bg;
-        box-shadow: $box-shadow;
+        border: 1px solid rgba(#a86a00, 0.14);
+        background: linear-gradient(110deg, #fff 55%, #fef6e2);
+        box-shadow: 0 22px 44px -36px rgba($shadow-color, 0.7);
     }
 
     li > div:last-child {
@@ -1217,8 +1505,8 @@
 
 .draw {
     display: grid;
-    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
-    border-radius: 20px;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    border-radius: $radius-lg;
     background: $main-bg;
     border: 1px solid rgba($main-color, 0.08);
     box-shadow: 0 22px 44px -32px rgba($shadow-color, 0.7);
@@ -1238,10 +1526,20 @@
         flex-direction: column;
         justify-content: center;
         gap: 8px;
-        padding: 32px 30px;
-        background: linear-gradient(150deg, #fbe3b4, #f5c566);
+        padding: 36px 32px;
+        background:
+            radial-gradient(circle at 18% 14%, rgba(#fff, 0.7) 0 3px, transparent 4px),
+            radial-gradient(circle at 82% 22%, rgba(#fff, 0.55) 0 5px, transparent 6px),
+            radial-gradient(circle at 66% 9%, rgba(#a86a00, 0.25) 0 3px, transparent 4px),
+            radial-gradient(circle at 90% 56%, rgba(#a86a00, 0.18) 0 4px, transparent 5px),
+            radial-gradient(circle at 12% 84%, rgba(#fff, 0.5) 0 4px, transparent 5px),
+            linear-gradient(150deg, #fdeecb, #f5c566);
         color: #4a2f00;
         overflow: hidden;
+
+        @include tablet {
+            padding: 28px 24px;
+        }
 
         &::after {
             content: "";
@@ -1270,10 +1568,57 @@
         strong {
             font-family: $font-display;
             font-variant-numeric: lining-nums;
-            font-size: 28px;
+            font-size: 34px;
             font-weight: 700;
-            line-height: 1.18;
+            line-height: 1.14;
             overflow-wrap: anywhere;
+
+            @include mobile {
+                font-size: 28px;
+            }
+        }
+    }
+
+    &__prize-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 62px;
+        height: 62px;
+        margin-bottom: 8px;
+        border-radius: 50%;
+        background: rgba(#fff, 0.7);
+        color: #8a5700;
+        box-shadow: 0 16px 28px -18px rgba(#8a5700, 0.9);
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px 12px;
+    }
+
+    &__pill {
+        padding: 4px 12px;
+        border-radius: $radius-pill;
+        font-size: 12px;
+        font-weight: 700;
+
+        &.is-open {
+            background: #e7f8ef;
+            color: #0a6e44;
+        }
+
+        &.is-wait {
+            background: #fdf3d7;
+            color: #8a5700;
+        }
+
+        &.is-done {
+            background: $main-soft;
+            color: $main-dark;
         }
     }
 
@@ -1292,15 +1637,17 @@
         display: flex;
         min-width: 0;
         flex-direction: column;
-        gap: 16px;
-        padding: 26px 30px;
+        gap: 18px;
+        padding: 30px 34px;
 
         @include mobile {
             padding: 20px;
         }
 
         h3 {
-            font-size: 20px;
+            font-family: $font-display;
+            font-variant-numeric: lining-nums;
+            font-size: 24px;
             font-weight: 700;
             color: $txt-main-color;
         }
@@ -1313,23 +1660,107 @@
         color: $txt-second-color;
     }
 
-    &__when {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 22px;
-        font-size: 13px;
-        color: $txt-second-color;
+    &__timeline {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding-top: 4px;
 
-        span {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+        @include mobile {
+            grid-template-columns: 1fr;
+        }
+
+        li {
+            position: relative;
+            padding-top: 26px;
+
+            @include mobile {
+                padding: 0 0 0 28px;
+            }
+
+            // The line on to the next step.
+            &:not(:last-child)::after {
+                content: "";
+                position: absolute;
+                top: 8px;
+                right: -10px;
+                left: 18px;
+                height: 2px;
+                background: $main-soft;
+
+                @include mobile {
+                    display: none;
+                }
+            }
+
+            > span {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: $main-soft;
+                color: $txt-white;
+            }
+
+            &.is-done > span {
+                background: #0c8a55;
+            }
+
+            &.is-done::after {
+                background: #0c8a55;
+            }
+
+            &.is-now > span {
+                background: $main-color;
+                box-shadow: 0 0 0 4px rgba($main-color, 0.18);
+            }
         }
 
         strong {
+            display: block;
+            font-size: 13.5px;
             font-weight: 700;
             color: $txt-main-color;
         }
+
+        small {
+            display: block;
+            margin-top: 2px;
+            font-size: 12.5px;
+            line-height: 1.4;
+            color: #6f7890;
+        }
+    }
+
+    &__entered-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+
+        .draw__entered {
+            flex: 1;
+            min-width: 240px;
+        }
+    }
+
+    &__share {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 14px;
+        background: $main-soft;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: $main-dark;
     }
 
     &__enter {
@@ -1424,47 +1855,61 @@
 
     > div {
         flex: 1;
-        max-width: 84px;
-        padding: 10px 4px;
+        max-width: 92px;
+        padding: 12px 4px 10px;
         border-radius: 14px;
-        background: linear-gradient(150deg, $main-light, $main-dark);
-        color: $txt-white;
+        background: #f2f5fb;
+        border: 1px solid rgba($main-color, 0.08);
         text-align: center;
     }
 
     strong {
         display: block;
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 800;
         line-height: 1.1;
         font-variant-numeric: tabular-nums;
+        color: $main-dark;
+
+        @include mobile {
+            font-size: 23px;
+        }
     }
 
     small {
-        font-size: 11px;
-        opacity: 0.88;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #6f7890;
+    }
+
+    // Under a day to go.
+    &.is-soon > div {
+        background: #fef3e0;
+        border-color: rgba(#a86a00, 0.18);
+    }
+
+    &.is-soon strong {
+        color: #a35b00;
     }
 }
 
 .past-winners {
-    border-radius: $radius-lg;
-    background: $main-bg;
-    box-shadow: $box-shadow;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
 
     li {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px 14px;
-        padding: 15px 22px;
-        border-bottom: 1px solid $app-bg;
-
-        &:last-child {
-            border-bottom: 0;
-        }
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 2px 12px;
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: $main-bg;
+        border: 1px solid rgba($main-color, 0.08);
 
         > svg {
-            flex-shrink: 0;
+            grid-row: span 3;
+            align-self: center;
             color: #d98a1f;
         }
     }
@@ -1473,17 +1918,17 @@
         font-size: 15px;
         font-weight: 700;
         color: $txt-main-color;
+        overflow-wrap: anywhere;
     }
 
     span {
-        flex: 1;
-        min-width: 160px;
         font-size: 14px;
-        color: $txt-second-color;
+        color: #5c6680;
+        overflow-wrap: anywhere;
     }
 
     small {
-        font-size: 13px;
+        font-size: 12.5px;
         color: $txt-second-color;
     }
 }
